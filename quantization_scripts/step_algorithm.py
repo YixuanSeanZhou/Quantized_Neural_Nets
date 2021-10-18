@@ -1,12 +1,15 @@
 from __future__ import annotations
 
-import numpy as np
+import numpy
 import h5py
 import multiprocessing as mp
 
+ANALOG_INPUT = 'ANALOG_INPUT'
+QUANTIZE_INPUT = 'QUANTIZE_INPUT'
+
 class StepAlgorithm:
     
-    def _nearest_alphabet(target_val: float, alphabet: np.array) -> float:
+    def _nearest_alphabet(target_val: float, alphabet: numpy.array) -> float:
         '''
         Return the aproximated result to the target by the alphabet.
 
@@ -14,7 +17,7 @@ class StepAlgorithm:
         ----------
         target_val : float
             The target value to appoximate by the alphabet.
-        alphabet : np.array
+        alphabet : numpy.array
             Scalar numpy array listing the alphabet to perform quantization.
 
         Returns
@@ -23,12 +26,12 @@ class StepAlgorithm:
             The element within the alphabet that is cloest to the target.
         '''
         
-        return alphabet[np.argmin(abs(alphabet-target_val))]
+        return alphabet[numpy.argmin(abs(alphabet-target_val))]
 
 
     def _quantize_weight(w: float, u: float,
-                         X: np.array, X_tilde: np.array,
-                         alphabet: np.array) -> float:
+                         X: numpy.array, X_tilde: numpy.array,
+                         alphabet: numpy.array) -> float:
         '''
         Quantize a particular weight parameter.
 
@@ -36,15 +39,15 @@ class StepAlgorithm:
         -----------
         w : float
             The weight of the analog network.
-        u : np.array ,
+        u : numpy.array ,
             Residual vector of the previous step.
-        X : np.array
+        X : numpy.array
             Input to the current neuron\
             generated from the previous layer of the analog network.
-        X_tilde : np.array
+        X_tilde : numpy.array
             Input to the current neuron\
             generated from the previous layer of the quantized network.
-        alphabet : np.array
+        alphabet : numpy.array
             Scalar numpy array listing the alphabet to perform quantization.
 
         Returns
@@ -54,88 +57,97 @@ class StepAlgorithm:
         '''
 
         # TODO: Is this simplification even necessary?
-        if np.linalg.norm(X_tilde, 2) < 10 ** (-16):
+        if numpy.linalg.norm(X_tilde, 2) < 10 ** (-16):
             return StepAlgorithm._nearest_alphabet(0, alphabet)
         
-        if abs(np.dot(X_tilde, u)) < 10 ** (-10):
+        if abs(numpy.dot(X_tilde, u)) < 10 ** (-10):
             return StepAlgorithm._nearest_alphabet(w, alphabet)
         
-        target_val = np.dot(X_tilde, u + w * X) / (np.norm(X_tilde, 2) ** 2)
+        target_val = numpy.dot(X_tilde, u + w * X) / (numpy.norm(X_tilde, 2) ** 2)
         
         return StepAlgorithm._nearest_alphabet(target_val, alphabet)
 
     
-    def _quantize_neuron(w: np.array, neuron_idx: int, input_file: str,
-                         m: int, alphabet: np.array) -> np.array:
+    def _quantize_neuron(w: numpy.array, neuron_idx: int, 
+                         analog_layer_input: numpy.array,
+                         quantized_layer_input: numpy.array,
+                         m: int, alphabet: numpy.array) -> numpy.array:
         '''
         Quantize one neuron of a layer.
 
         Parameters
         -----------
-        w : np.array
+        w : numpy.array
             The single neuron.
         neuron_idx: int
             The position of the neuron in the layer.
-        input_file: str
-            The h5py file name of the input.
+        analog_layer_input: numpy.array,
+            The input for the layer of analog network.
+        quantized_layer_input: numpy.array,
+            The input for the layer of quantized network.
         m : int
             The batch size (num of input).
-        alphabet : np.array
+        alphabet : numpy.array
             Scalar numpy array listing the alphabet to perform quantization.
 
         Returns
         -------
-        np.array
+        numpy.array
             The quantized neuron.
         '''
         
-        with h5py.File(input_file, 'r') as hf:
-            q = np.zeros(w.shape[0])
-            u = np.zeros(m)
-            for t in range(w.shape[0]):
-                X_analog, X_quantize = hf['wX'][t, :], hf['qX'][t, :]
-                q[t] = StepAlgorithm._quantize_weight(w[t], u, 
-                                                      X_analog, X_quantize,
-                                                      alphabet)
-                u += w[t] * X_analog - q[t] * X_quantize
+        q = numpy.zeros(w.shape[0])
+        u = numpy.zeros(m)
+        for t in range(w.shape[0]):
+            X_analog = analog_layer_input[t, :]
+            X_quantize = quantized_layer_input[t, :]
+            q[t] = StepAlgorithm._quantize_weight(w[t], u, 
+                                                    X_analog, X_quantize,
+                                                    alphabet)
+            u += w[t] * X_analog - q[t] * X_quantize
 
         return neuron_idx, q
 
 
-    def _quantize_layer(W: np.array, input_file: str,
-                        m: int, alphabet: np.array) -> np.array:
+    def _quantize_layer(W: numpy.array,
+                        analog_layer_input: numpy.array,
+                        quantized_layer_input: numpy.array,
+                        m: int, alphabet: numpy.array,
+                        ) -> numpy.array:
         '''
         Quantize one layer in parallel.
 
         Parameters
         -----------
-        W : np.array
+        W : numpy.array
             The layer to be quantized.
-        input_file: str
-            The h5py file name of the input.
+        analog_layer_input: numpy.array,
+            The input for the layer of analog network.
+        quantized_layer_input: numpy.array,
+            The input for the layer of quantized network.
         m : int
             The batch size (num of input).
-        alphabet : np.array
+        alphabet : numpy.array
             Scalar numpy array listing the alphabet to perform quantization.
 
         Returns
         -------
-        np.array
+        numpy.array
             The quantized layer.
         '''
-        # TODO: populate file
-
         # Start quantize 
         pool = mp.Pool(mp.cpu_count())
 
         # FIXME: This defeats the purpose, partially
         # radius
-        rad = alphabet * np.median(np.abs(W.flatten()))
+        rad = alphabet * numpy.median(numpy.abs(W.flatten()))
         layer_alphabet = rad * alphabet
 
-        Q = np.zeros(W.shape)
+        Q = numpy.zeros(W.shape)
         results = [pool.apply_async(StepAlgorithm._quantize_neuron, 
-                                    args=(w, i, input_file, m, layer_alphabet)) 
+                                    args=(w, i, analog_layer_input, 
+                                          quantized_layer_input, m,
+                                          layer_alphabet)) 
                                     for i, w in enumerate(W.T)]
         # join
         for _ in range(Q.shape[1]):
@@ -143,6 +155,7 @@ class StepAlgorithm:
             Q[:, idx] = q
 
         return Q
+
 
         
 
