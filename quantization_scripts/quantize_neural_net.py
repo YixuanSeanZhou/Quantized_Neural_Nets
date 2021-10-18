@@ -2,7 +2,6 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import numpy as np
-import h5py
 import os
 import numpy
 
@@ -21,17 +20,36 @@ class QuantizeNeuralNet():
                  network_to_quantize: torch.nn.Module, 
                  batch_size: int,
                  data_loader: function,
-                 mini_batch_size: int,
-                 bits: float,
+                 bits: int,
                  ignore_layers: List[int] =[],
                  alphabet_scalar: float = 1):
         '''
         Init the object that is used for quantizing the given neural net.
+
+        Parameters
+        -----------
+        network_to_quantize : torch.nn.Module
+            The neural network to be quantized.
+        batch_size: int,
+            The batch size input to each layer when quantization is performed.
+        data_loader: function,
+            The generator that loads the raw dataset
+        bits : int
+            Num of bits that alphabet is used.
+        ignore_layers : List[int]
+            List of layer index that shouldn't be quantized.
+        alphabet_scaler: float,
+            The alphabet_scaler used to determine the radius \
+            of the alphabet for each layer.
+        
+        Returns
+        -------
+        QuantizeNeuralNet
+            The object that is used to perform quantization
         '''
         self.analog_network = network_to_quantize
         self.batch_size = batch_size
         self.data_loader = data_loader
-        self.min_batch_size = mini_batch_size
 
         # FIXME: alphabet_scaler should probably not be used like this
         self.alphabet_scalar = alphabet_scalar
@@ -48,6 +66,18 @@ class QuantizeNeuralNet():
         self.quantized_network_layers = list(self.quantized_network.children())
 
     def quantize_network(self):
+        '''
+        Perform the quantization of the neural network.
+
+        Parameters
+        -----------
+        
+        Returns
+        -------
+        torch.nn.Module
+            The quantized neural network.
+        '''
+
         layers_to_quantize = [
             i for i, layer in enumerate(self.quantized_network.children()) 
                 if layer.type() == LINEAR_MODULE_TYPE 
@@ -60,7 +90,8 @@ class QuantizeNeuralNet():
 
             W = self.analog_network_layers[layer_idx].weight.data.detach().numpy()
 
-            layer_alphabet = numpy.mean(W.flatten()) * self.alphabet
+            layer_alphabet \
+                = numpy.mean(W.flatten()) * self.alphabet_scalar * self.alphabet
 
             Q = StepAlgorithm._quantize_layer(W, 
                                               analog_layer_input, 
@@ -70,9 +101,28 @@ class QuantizeNeuralNet():
                                               )
 
             quantized_layer_input[layer_idx].weight.data = Q
+        
+        return self.quantized_network
 
         
     def _populate_linear_layer_input(self, layer_idx: int):
+        '''
+        Load the input to the given layer specified by the layer_idx for both
+        analog network and the network to be quantized.
+
+        Parameters
+        -----------
+        layer_idx : int
+            The idx of the layer to be quantized.
+
+        Returns
+        -------
+        tuple(torch.Tensor)
+            A tuple of torch.Tensor that is the input for the intersted layer, 
+            at 0th idx is the input for the analog network layer,
+            at 1st idx is the input for the quantizing network layer.
+        '''
+
         # get data
         raw_input_data = next(iter(self.data_loader))
 
@@ -112,8 +162,19 @@ class QuantizeNeuralNet():
 
     def _analog_layer_input_extract_hook(module, layer_input, layer_output):
         '''
-        The forward hook used to extract the layer's input of a module,
+        The forward hook used to extract the analog layer's input of a module,
         InterruptException is thrown to terminate the forward evaluation.
+        The resulted input tensor is written in file TEMP_ANALOG_TENSOR_FILE.
+        So far we can only handle module whose layer_input is of length 1.
+
+        Parameters
+        -----------
+        module: torch.nn.Module
+            The module layer to attach the hook to.
+        layer_input: tuple(torch.Tensor)
+            The inputs to the current module.
+        layer_output: torch.Tensor
+            The output to the current module.
         '''
         if os.path.exists(TEMP_ANALOG_TENSOR_FILE):
             os.remove(TEMP_ANALOG_TENSOR_FILE)
@@ -124,8 +185,19 @@ class QuantizeNeuralNet():
     
     def _quantized_layer_input_extract_hook(module, layer_input, layer_output):
         '''
-        The forward hook used to extract the layer's input of a module,
+        The forward hook used to extract the quantizing layer's input of a module,
         InterruptException is thrown to terminate the forward evaluation.
+        The resulted input tensor is written in file TEMP_QUANTIZED_TENSOR_FILE.
+        So far we can only handle module whose layer_input is of length 1.
+
+        Parameters
+        -----------
+        module: torch.nn.Module
+            The module layer to attach the hook to.
+        layer_input: tuple(torch.Tensor)
+            The inputs to the current module.
+        layer_output: torch.Tensor
+            The output to the current module.
         '''
         if os.path.exists(TEMP_QUANTIZED_TENSOR_FILE):
             os.remove(TEMP_QUANTIZED_TENSOR_FILE)
