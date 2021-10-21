@@ -63,7 +63,7 @@ class StepAlgorithm:
         if abs(numpy.dot(X_tilde, u)) < 10 ** (-10):
             return StepAlgorithm._nearest_alphabet(w, alphabet)
         
-        target_val = numpy.dot(X_tilde, u + w * X) / (numpy.norm(X_tilde, 2) ** 2)
+        target_val = numpy.dot(X_tilde, u + w * X) / (numpy.linalg.norm(X_tilde, 2) ** 2)
         
         return StepAlgorithm._nearest_alphabet(target_val, alphabet)
 
@@ -95,12 +95,11 @@ class StepAlgorithm:
         numpy.array
             The quantized neuron.
         '''
-        
         q = numpy.zeros(w.shape[0])
         u = numpy.zeros(m)
         for t in range(w.shape[0]):
-            X_analog = analog_layer_input[t, :]
-            X_quantize = quantized_layer_input[t, :]
+            X_analog = analog_layer_input[:, t]
+            X_quantize = quantized_layer_input[:, t]
             q[t] = StepAlgorithm._quantize_weight(w[t], u, 
                                                     X_analog, X_quantize,
                                                     alphabet)
@@ -150,9 +149,18 @@ class StepAlgorithm:
                                           layer_alphabet)) 
                                     for i, w in enumerate(W.T)]
         # join
-        for _ in range(Q.shape[1]):
-            idx, q = results.get()
+        for i in range(Q.shape[1]):
+            idx, q = results[i].get()
             Q[:, idx] = q
+
+        # for i, w in enumerate(W):
+        #     idx, q = StepAlgorithm._quantize_neuron(w, i, 
+        #                                         analog_layer_input, 
+        #                                         quantized_layer_input,
+        #                                         m , layer_alphabet)
+        #     Q[idx, :] = q
+
+        pool.close()
 
         return Q
 

@@ -1,3 +1,4 @@
+from __future__ import annotations
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -5,19 +6,32 @@ import numpy as np
 import os
 import numpy
 
-from .helper_tools import InterruptException
-from .step_algorithm import StepAlgorithm
+from helper_tools import InterruptException
+from step_algorithm import StepAlgorithm
 
 from typing import List, final
 
 TEMP_ANALOG_TENSOR_FILE = 'temp_input_tensor_analog_file.pt'
 TEMP_QUANTIZED_TENSOR_FILE = 'temp_input_tensor_quantized_file.pt'
 
-LINEAR_MODULE_TYPE = torch.nn.modules.linear.Linear
+LINEAR_MODULE_TYPE = nn.modules.linear.Linear
 
 class QuantizeNeuralNet():
+    '''
+    Corresponding object to work with for quantizing the neural network.
+    
+    Attributes
+    ----------
+    analog_network : nn.Module
+        Copy of the neural network to be quantized.
+    batch_size: int
+        The batch size to be used to quantize each layer.
+    data_loader: function
+        The data_loader to load data
+    ...
+    '''
     def __init__(self, 
-                 network_to_quantize: torch.nn.Module, 
+                 network_to_quantize: nn.Module, 
                  batch_size: int,
                  data_loader: function,
                  bits: int,
@@ -28,7 +42,7 @@ class QuantizeNeuralNet():
 
         Parameters
         -----------
-        network_to_quantize : torch.nn.Module
+        network_to_quantize : nn.Module
             The neural network to be quantized.
         batch_size: int,
             The batch size input to each layer when quantization is performed.
@@ -74,13 +88,13 @@ class QuantizeNeuralNet():
         
         Returns
         -------
-        torch.nn.Module
+        nn.Module
             The quantized neural network.
         '''
 
         layers_to_quantize = [
             i for i, layer in enumerate(self.quantized_network.children()) 
-                if layer.type() == LINEAR_MODULE_TYPE 
+                if type(layer) == LINEAR_MODULE_TYPE 
                     and i not in self.ignore_layers
                 ]
 
@@ -100,7 +114,7 @@ class QuantizeNeuralNet():
                                               layer_alphabet
                                               )
 
-            quantized_layer_input[layer_idx].weight.data = Q
+            self.quantized_network_layers[layer_idx].weight.data = torch.tensor(Q).float()
         
         return self.quantized_network
 
@@ -124,30 +138,30 @@ class QuantizeNeuralNet():
         '''
 
         # get data
-        raw_input_data = next(iter(self.data_loader))
+        raw_input_data, labels = next(iter(self.data_loader))
 
         # attach a handle to both analog and quantize layer
         analog_handle = self.analog_network_layers[layer_idx]\
                             .register_forward_hook(
-                                QuantizeNeuralNet._layer_input_extract_hook
+                                QuantizeNeuralNet._analog_layer_input_extract_hook
                                 )
         quantized_handle = self.quantized_network_layers[layer_idx]\
                             .register_forward_hook(
-                                QuantizeNeuralNet._layer_input_extract_hook
+                                QuantizeNeuralNet._quantized_layer_input_extract_hook
                                 )
         
         # make evaluation for both models
         torch.no_grad()
         
         try:
-            self.analog_model(raw_input_data)
+            self.analog_network(raw_input_data)
         except InterruptException:
             pass
         
         analog_handle.remove()
 
         try:
-            self.quantized_model(raw_input_data)
+            self.quantized_network(raw_input_data)
         except InterruptException:
             pass
 
@@ -169,7 +183,7 @@ class QuantizeNeuralNet():
 
         Parameters
         -----------
-        module: torch.nn.Module
+        module: nn.Module
             The module layer to attach the hook to.
         layer_input: tuple(torch.Tensor)
             The inputs to the current module.
@@ -192,7 +206,7 @@ class QuantizeNeuralNet():
 
         Parameters
         -----------
-        module: torch.nn.Module
+        module: nn.Module
             The module layer to attach the hook to.
         layer_input: tuple(torch.Tensor)
             The inputs to the current module.
