@@ -9,7 +9,7 @@ import numpy
 from helper_tools import InterruptException
 from step_algorithm import StepAlgorithm
 
-from typing import List, final
+from typing import List
 
 TEMP_ANALOG_TENSOR_FILE = 'temp_input_tensor_analog_file.pt'
 TEMP_QUANTIZED_TENSOR_FILE = 'temp_input_tensor_quantized_file.pt'
