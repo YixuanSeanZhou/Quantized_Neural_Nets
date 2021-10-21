@@ -105,6 +105,8 @@ class StepAlgorithm:
                                                     alphabet)
             u += w[t] * X_analog - q[t] * X_quantize
 
+        print(numpy.linalg.norm(u))
+
         return neuron_idx, q
 
 
