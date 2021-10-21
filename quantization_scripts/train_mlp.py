@@ -5,7 +5,7 @@ import torch.nn.functional as functional
 from torch.utils import data
 import torchvision
 from torchvision import transforms
-from d2l import torch as d2l
+# from d2l import torch as d2l
 import multiprocessing as mp
 import numpy
 
