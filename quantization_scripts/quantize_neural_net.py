@@ -63,7 +63,7 @@ class QuantizeNeuralNet():
         '''
         self.analog_network = network_to_quantize
         self.batch_size = batch_size
-        self.data_loader = data_loader
+        self.data_loader_iter = iter(data_loader)
 
         # FIXME: alphabet_scaler should probably not be used like this
         self.alphabet_scalar = alphabet_scalar
@@ -115,7 +115,9 @@ class QuantizeNeuralNet():
                                               )
 
             self.quantized_network_layers[layer_idx].weight.data = torch.tensor(Q).float()
-        
+
+            print(f'Finished quantizing layer {layer_idx}')
+
         return self.quantized_network
 
         
@@ -138,7 +140,7 @@ class QuantizeNeuralNet():
         '''
 
         # get data
-        raw_input_data, labels = next(iter(self.data_loader))
+        raw_input_data, labels = next(self.data_loader_iter)
 
         # attach a handle to both analog and quantize layer
         analog_handle = self.analog_network_layers[layer_idx]\

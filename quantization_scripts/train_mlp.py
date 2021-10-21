@@ -19,15 +19,18 @@ class MLP(nn.Module):
     def __init__(self):
         super().__init__()
 
-        self.layer_1 = nn.Linear(28 * 28, 256)
-        self.layer_2 = nn.Linear(256, 10)
+        self.layer_1 = nn.Linear(28 * 28, 500, bias=False)
+        self.layer_2 = nn.Linear(500, 300, bias=False)
+        self.layer_3 = nn.Linear(300, 10, bias=False)
 
     def forward(self, X: torch.tensor):
         X = X.view(-1, 28 * 28)
         X = self.layer_1(X)
         X = functional.relu(X)
         X = self.layer_2(X)
-        return functional.log_softmax(X, dim=0)
+        X = functional.relu(X)
+        X = self.layer_3(X)
+        return functional.log_softmax(X)
 
 
 def train_mlp(model: nn.Module, lr: float, 
@@ -40,7 +43,7 @@ def train_mlp(model: nn.Module, lr: float,
     optimizer = torch_optimizer(model.parameters(), lr=lr)
 
     model.train()
-    for epoch in range(0, 2):
+    for epoch in range(0, 3):
         print(f'Starting epoch {epoch +1}')
         current_loss = 0.0
         for i, (features, labels) in enumerate(train_loader, 0):
@@ -110,7 +113,7 @@ def test_mlp(model: nn.Module,
 if __name__ == '__main__':
     train_loader, test_loader = load_data_mnist(50)
     mlp = MLP()
-    loss_function = nn.CrossEntropyLoss
+    loss_function = nn.NLLLoss
     optimizer = torch.optim.Adam
     train_mlp(mlp, 0.01, train_loader, loss_function, optimizer)
     test_mlp(mlp, test_loader, loss_function)

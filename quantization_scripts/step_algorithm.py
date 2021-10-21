@@ -25,6 +25,8 @@ class StepAlgorithm:
         float
             The element within the alphabet that is cloest to the target.
         '''
+
+        # torch.min -> min, min_idx
         
         return alphabet[numpy.argmin(abs(alphabet-target_val))]
 
@@ -96,6 +98,7 @@ class StepAlgorithm:
             The quantized neuron.
         '''
         q = numpy.zeros(w.shape[0])
+        # q = numpy.copy(w)
         u = numpy.zeros(m)
         for t in range(w.shape[0]):
             X_analog = analog_layer_input[:, t]
@@ -104,8 +107,6 @@ class StepAlgorithm:
                                                     X_analog, X_quantize,
                                                     alphabet)
             u += w[t] * X_analog - q[t] * X_quantize
-
-        print(numpy.linalg.norm(u))
 
         return neuron_idx, q
 
