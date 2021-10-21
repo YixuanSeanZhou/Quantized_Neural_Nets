@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import numpy
-import h5py
 import multiprocessing as mp
 
 ANALOG_INPUT = 'ANALOG_INPUT'

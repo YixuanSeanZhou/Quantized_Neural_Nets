@@ -46,7 +46,7 @@ def train_mlp(model: nn.Module, lr: float,
     for epoch in range(0, 3):
         print(f'Starting epoch {epoch +1}')
         current_loss = 0.0
-        for i, (features, labels) in enumerate(train_loader, 0):
+        for i, (features, labels) in enumerate(train_loader):
             
             optimizer.zero_grad()
             
@@ -79,7 +79,7 @@ def test_mlp(model: nn.Module,
 
     model.eval()
 
-    for i, (features, labels) in enumerate(test_loader, 0):
+    for i, (features, labels) in enumerate(test_loader):
 
         output = model(features)
 
