@@ -130,3 +130,6 @@ dmypy.json
 
 # experimental_place
 experimental_place/*
+experimental_place/data/*
+models/*
+quantization_scripts/*.pt
