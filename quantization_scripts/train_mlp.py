@@ -1,73 +1,80 @@
 from __future__ import annotations
 import torch
 import torch.nn as nn
-import torch.nn.functional as functional
-from torch.utils import data
-import torchvision
-from torchvision import transforms
-# from d2l import torch as d2l
+import torch.nn.functional as F
+from torch import optim
 import multiprocessing as mp
-import numpy
+import numpy as np
+import matplotlib.pyplot as plt
 
-from data_loaders import load_data_mnist
+from data_loaders import load_data_mnist, load_data_fashion_mnist
+
+# If we need to train complicated models, then we enable GPUs.
+# Will do this later.
+device = "cuda" if torch.cuda.is_available() else "cpu"
+print(f'{device} is available.')
 
 
 class MLP(nn.Module):
     '''
     The most navie MLP network with input 28*28 -> 256 -> 10 -> softmax
     '''
-    def __init__(self):
+    def __init__(self, input_dim, hidden_dim, out_dim):
         super().__init__()
+        self.input_dim = input_dim
+        self.hidden_dim = hidden_dim
+        self.out_dim = out_dim
+        # Define layers of MLP
+        self.layer1 = nn.Linear(input_dim, hidden_dim[0], bias=False)
+        self.layer2 = nn.Linear(hidden_dim[0], hidden_dim[1], bias=False)
+        self.layer3 = nn.Linear(hidden_dim[1], out_dim, bias=False)
 
-        self.layer_1 = nn.Linear(28 * 28, 500, bias=False)
-        self.layer_2 = nn.Linear(500, 300, bias=False)
-        self.layer_3 = nn.Linear(300, 10, bias=False)
+    def forward(self, X):
+        X = X.view(-1, self.input_dim)
+        X = self.layer1(X)
+        X = F.relu(X)
+        X = self.layer2(X)
+        X = F.relu(X)
+        X = self.layer3(X)
+        return F.log_softmax(X, dim=1)
 
-    def forward(self, X: torch.tensor):
-        X = X.view(-1, 28 * 28)
-        X = self.layer_1(X)
-        X = functional.relu(X)
-        X = self.layer_2(X)
-        X = functional.relu(X)
-        X = self.layer_3(X)
-        return functional.log_softmax(X)
-
-
-def train_mlp(model: nn.Module, lr: float, 
-              train_loader: data.DataLoader, 
-              torch_loss_function: type, 
-              torch_optimizer: type,
-              ) -> nn.Module:
+def train_mlp(train_loader, val_loader, model, loss_fn, optimizer, n_epochs):
+    """
+    Add annotations as docstrings. Will do this later.
+    """
+    train_losses = []
+    val_losses = []
     
-    loss_function = torch_loss_function()
-    optimizer = torch_optimizer(model.parameters(), lr=lr)
-
-    model.train()
-    for epoch in range(0, 3):
-        print(f'Starting epoch {epoch +1}')
-        current_loss = 0.0
-        for i, (features, labels) in enumerate(train_loader):
-            
-            optimizer.zero_grad()
-            
-            results = model(features)
-            
-            # Compute loss
-            loss = loss_function(results, labels)
-            
-            # Perform backward pass
+    for epoch in range(1, n_epochs+1):
+        model.train()
+        batch_losses = []
+        for x_batch, y_batch in train_loader:
+            output = model(x_batch)
+            loss = loss_fn(output, y_batch)
             loss.backward()
-            
-            # Perform optimization
             optimizer.step()
-            
-            # Print statistics
-            current_loss += loss.item()
-            
-            if i % 500 == 499:
-                print('Loss after mini-batch %5d: %.3f' %
-                        (i + 1, current_loss / 500))
-                current_loss = 0.0
+            optimizer.zero_grad()
+            batch_losses.append(loss.item())
+        training_loss = np.mean(batch_losses)
+        train_losses.append(training_loss)
+
+        model.eval()  # Start validation
+        batch_val_losses = []
+        with torch.no_grad():
+            for x_val, y_val in val_loader:
+                val_output = model(x_val)
+                val_loss = loss_fn(val_output, y_val).item()
+                batch_val_losses.append(val_loss)
+            validation_loss = np.mean(batch_val_losses)
+            val_losses.append(validation_loss)
+        
+        if (epoch <= 10) | (epoch % 10 == 0):
+            print(
+                f"[{epoch}/{n_epochs}] Training loss: {training_loss:.4f}\t \
+                Validation loss: {validation_loss:.4f}"
+            )
+    return train_losses, val_losses
+
 
 def test_mlp(model: nn.Module, 
              test_loader: data.DataLoader,
@@ -111,13 +118,24 @@ def test_mlp(model: nn.Module,
 
 
 if __name__ == '__main__':
-    train_loader, test_loader = load_data_mnist(50)
-    mlp = MLP()
-    loss_function = nn.NLLLoss
-    optimizer = torch.optim.Adam
-    train_mlp(mlp, 0.01, train_loader, loss_function, optimizer)
-    test_mlp(mlp, test_loader, loss_function)
-    torch.save(mlp, '../models/mlp.pt')
- 
+    batch_size = 16
+    input_dim = 28 * 28
+    hidden_dim = [512, 256]
+    out_dim = 10
+    n_epochs = 50
+    learning_rate = 1e-3
+    weight_decay = 1e-6 
 
+    train_loader, val_loader, test_loader = load_data_mnist(batch_size, train_ratio=0.8)
+    model = MLP(input_dim, hidden_dim, out_dim)
+    loss_fn = nn.NLLLoss()
+    optimizer = optim.Adam(model.parameters(), lr=learning_rate, weight_decay=weight_decay)
+    train_losses, val_losses = train_mlp(train_loader, val_loader, model, loss_fn, optimizer, n_epochs)
+    plt.plot(train_losses, label="Training loss")
+    plt.plot(val_losses, label="Validation loss")
+    plt.legend()
+    plt.title("Losses")
+    plt.show()
 
+    # test_mlp(mlp, test_loader, loss_function)
+    torch.save(model.state_dict(), '../models/mlp.pt')
