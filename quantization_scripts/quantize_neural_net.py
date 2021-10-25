@@ -5,6 +5,7 @@ import torch.nn.functional as F
 import numpy as np
 import os
 import numpy
+import copy
 
 from helper_tools import InterruptException
 from step_algorithm import StepAlgorithm
@@ -73,8 +74,15 @@ class QuantizeNeuralNet():
         self.ignore_layers = ignore_layers
 
         # create a copy which is our quantized network
-        self.quantized_network = type(self.analog_network)()
-        self.quantized_network.load_state_dict(self.analog_network.state_dict())
+        # self.quantized_network = type(self.analog_network)(
+        #     self.analog_network.input_dim, 
+        #     self.analog_network.hidden_dim, 
+        #     self.analog_network.outputdim
+        #     )
+        # self.quantized_network.load_state_dict(self.analog_network.state_dict())
+        self.quantized_network = copy.deepcopy(self.analog_network)
+        # self.quantized_network.load_state_dict(self.analog_network.state_dict())
+        # print(type(self.quantized_network))
 
         self.analog_network_layers = list(self.analog_network.children())
         self.quantized_network_layers = list(self.quantized_network.children())

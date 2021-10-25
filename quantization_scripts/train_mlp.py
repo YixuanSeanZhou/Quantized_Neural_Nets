@@ -3,7 +3,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch import optim
-import multiprocessing as mp
+from torch.utils.data import DataLoader
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -77,7 +77,7 @@ def train_mlp(train_loader, val_loader, model, loss_fn, optimizer, n_epochs):
 
 
 def test_mlp(model: nn.Module, 
-             test_loader: data.DataLoader,
+             test_loader: DataLoader,
              torch_loss_function: function):
     loss_function = torch_loss_function()
     test_loss = 0.0
@@ -96,7 +96,7 @@ def test_mlp(model: nn.Module,
 
         _, pred = torch.max(output, 1)
         # compare predictions to true label
-        correct = numpy.squeeze(pred.eq(labels.data.view_as(pred)))
+        correct = np.squeeze(pred.eq(labels.data.view_as(pred)))
         # calculate test accuracy for each object class
         for i in range(len(labels)):
             label = labels.data[i]
@@ -109,12 +109,12 @@ def test_mlp(model: nn.Module,
         if class_total[i] > 0:
             print('Test Accuracy of %5s: %2d%% (%2d/%2d)' % (
                 str(i), 100 * class_correct[i] / class_total[i],
-                numpy.sum(class_correct[i]), numpy.sum(class_total[i])))
+                np.sum(class_correct[i]), np.sum(class_total[i])))
         else:
             print('Test Accuracy of %5s: N/A (no training examples)' % (class_total[i]))
     print('\nTest Accuracy (Overall): %2d%% (%2d/%2d)' % (
-        100. * numpy.sum(class_correct) / numpy.sum(class_total),
-        numpy.sum(class_correct), numpy.sum(class_total)))
+        100. * np.sum(class_correct) / np.sum(class_total),
+        np.sum(class_correct), np.sum(class_total)))
 
 
 if __name__ == '__main__':
@@ -122,7 +122,7 @@ if __name__ == '__main__':
     input_dim = 28 * 28
     hidden_dim = [512, 256]
     out_dim = 10
-    n_epochs = 50
+    n_epochs = 2
     learning_rate = 1e-3
     weight_decay = 1e-6 
 
@@ -138,4 +138,4 @@ if __name__ == '__main__':
     plt.show()
 
     # test_mlp(mlp, test_loader, loss_function)
-    torch.save(model.state_dict(), '../models/mlp.pt')
+    torch.save(model, '../models/mlp.pt')

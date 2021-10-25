@@ -142,7 +142,7 @@ class StepAlgorithm:
         # radius
         rad = numpy.abs(W.flatten()).max()
         print(rad)
-        layer_alphabet = 12 * rad * alphabet
+        layer_alphabet = W.shape[1] *1e-2 * len(alphabet) * alphabet
 
         Q = numpy.zeros(W.shape)
         results = [pool.apply_async(StepAlgorithm._quantize_neuron, 
