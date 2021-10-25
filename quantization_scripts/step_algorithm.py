@@ -11,14 +11,12 @@ class StepAlgorithm:
     def _nearest_alphabet(target_val: float, alphabet: numpy.array) -> float:
         '''
         Return the aproximated result to the target by the alphabet.
-
         Parameters
         ----------
         target_val : float
             The target value to appoximate by the alphabet.
         alphabet : numpy.array
             Scalar numpy array listing the alphabet to perform quantization.
-
         Returns
         -------
         float
@@ -35,7 +33,6 @@ class StepAlgorithm:
                          alphabet: numpy.array) -> float:
         '''
         Quantize a particular weight parameter.
-
         Parameters
         -----------
         w : float
@@ -50,7 +47,6 @@ class StepAlgorithm:
             generated from the previous layer of the quantized network.
         alphabet : numpy.array
             Scalar numpy array listing the alphabet to perform quantization.
-
         Returns
         -------
         float
@@ -75,7 +71,6 @@ class StepAlgorithm:
                          m: int, alphabet: numpy.array) -> numpy.array:
         '''
         Quantize one neuron of a layer.
-
         Parameters
         -----------
         w : numpy.array
@@ -90,14 +85,12 @@ class StepAlgorithm:
             The batch size (num of input).
         alphabet : numpy.array
             Scalar numpy array listing the alphabet to perform quantization.
-
         Returns
         -------
         numpy.array
             The quantized neuron.
         '''
         q = numpy.zeros(w.shape[0])
-        # q = numpy.copy(w)
         u = numpy.zeros(m)
         for t in range(w.shape[0]):
             X_analog = analog_layer_input[:, t]
@@ -117,7 +110,6 @@ class StepAlgorithm:
                         ) -> numpy.array:
         '''
         Quantize one layer in parallel.
-
         Parameters
         -----------
         W : numpy.array
@@ -130,7 +122,6 @@ class StepAlgorithm:
             The batch size (num of input).
         alphabet : numpy.array
             Scalar numpy array listing the alphabet to perform quantization.
-
         Returns
         -------
         numpy.array
@@ -141,19 +132,19 @@ class StepAlgorithm:
 
         # FIXME: This defeats the purpose, partially
         # radius
-        rad = alphabet * numpy.median(numpy.abs(W.flatten()))
-        layer_alphabet = rad * alphabet
+        rad = numpy.abs(W.flatten()).max()
+        layer_alphabet = W.shape[1] *1e-2 * len(alphabet) * alphabet
 
         Q = numpy.zeros(W.shape)
         results = [pool.apply_async(StepAlgorithm._quantize_neuron, 
                                     args=(w, i, analog_layer_input, 
                                           quantized_layer_input, m,
                                           layer_alphabet)) 
-                                    for i, w in enumerate(W.T)]
+                                    for i, w in enumerate(W)]
         # join
-        for i in range(Q.shape[1]):
+        for i in range(Q.shape[0]):
             idx, q = results[i].get()
-            Q[:, idx] = q
+            Q[idx, :] = q
 
         # for i, w in enumerate(W):
         #     idx, q = StepAlgorithm._quantize_neuron(w, i, 
@@ -163,12 +154,7 @@ class StepAlgorithm:
         #     Q[idx, :] = q
 
         pool.close()
+        
+        print(numpy.linalg.norm(analog_layer_input.dot(W.T) - quantized_layer_input.dot(Q.T)))
 
         return Q
-
-
-        
-
-
-
-
