@@ -141,7 +141,6 @@ class StepAlgorithm:
         # FIXME: This defeats the purpose, partially
         # radius
         rad = numpy.abs(W.flatten()).max()
-        print(rad)
         layer_alphabet = W.shape[1] *1e-2 * len(alphabet) * alphabet
 
         Q = numpy.zeros(W.shape)
