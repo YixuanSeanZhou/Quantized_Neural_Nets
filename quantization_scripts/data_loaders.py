@@ -31,7 +31,7 @@ def load_data_fashion_mnist(batch_size, resize=None, train_ratio=0.8, num_worker
                         num_workers=num_workers)
     val_loader =  DataLoader(val_data, batch_size, shuffle=False,
                         num_workers=num_workers)
-    test_loader = DataLoader(mnist_test, batch_size, shuffle=False,
+    test_loader = DataLoader(mnist_test, batch_size=1, shuffle=False,
                             num_workers=num_workers)             
     return train_loader, val_loader, test_loader
 
@@ -59,6 +59,6 @@ def load_data_mnist(batch_size, resize=None, train_ratio=0.8, num_workers=get_da
                         num_workers=num_workers)
     val_loader =  DataLoader(val_data, batch_size, shuffle=False,
                         num_workers=num_workers)
-    test_loader = DataLoader(mnist_test, batch_size, shuffle=False,
+    test_loader = DataLoader(mnist_test, batch_size=1, shuffle=False,
                             num_workers=num_workers)             
     return train_loader, val_loader, test_loader
