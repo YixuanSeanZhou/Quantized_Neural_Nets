@@ -5,6 +5,7 @@ import torch.nn.functional as F
 import numpy as np
 import os
 import numpy
+import copy
 
 from helper_tools import InterruptException
 from step_algorithm import StepAlgorithm
@@ -39,7 +40,6 @@ class QuantizeNeuralNet():
                  alphabet_scalar: float = 1):
         '''
         Init the object that is used for quantizing the given neural net.
-
         Parameters
         -----------
         network_to_quantize : nn.Module
@@ -73,8 +73,15 @@ class QuantizeNeuralNet():
         self.ignore_layers = ignore_layers
 
         # create a copy which is our quantized network
-        self.quantized_network = type(self.analog_network)()
-        self.quantized_network.load_state_dict(self.analog_network.state_dict())
+        # self.quantized_network = type(self.analog_network)(
+        #     self.analog_network.input_dim, 
+        #     self.analog_network.hidden_dim, 
+        #     self.analog_network.outputdim
+        #     )
+        # self.quantized_network.load_state_dict(self.analog_network.state_dict())
+        self.quantized_network = copy.deepcopy(self.analog_network)
+        # self.quantized_network.load_state_dict(self.analog_network.state_dict())
+        # print(type(self.quantized_network))
 
         self.analog_network_layers = list(self.analog_network.children())
         self.quantized_network_layers = list(self.quantized_network.children())
@@ -82,7 +89,6 @@ class QuantizeNeuralNet():
     def quantize_network(self):
         '''
         Perform the quantization of the neural network.
-
         Parameters
         -----------
         
@@ -125,12 +131,10 @@ class QuantizeNeuralNet():
         '''
         Load the input to the given layer specified by the layer_idx for both
         analog network and the network to be quantized.
-
         Parameters
         -----------
         layer_idx : int
             The idx of the layer to be quantized.
-
         Returns
         -------
         tuple(torch.Tensor)
@@ -182,7 +186,6 @@ class QuantizeNeuralNet():
         InterruptException is thrown to terminate the forward evaluation.
         The resulted input tensor is written in file TEMP_ANALOG_TENSOR_FILE.
         So far we can only handle module whose layer_input is of length 1.
-
         Parameters
         -----------
         module: nn.Module
@@ -205,7 +208,6 @@ class QuantizeNeuralNet():
         InterruptException is thrown to terminate the forward evaluation.
         The resulted input tensor is written in file TEMP_QUANTIZED_TENSOR_FILE.
         So far we can only handle module whose layer_input is of length 1.
-
         Parameters
         -----------
         module: nn.Module
@@ -221,4 +223,3 @@ class QuantizeNeuralNet():
             raise TypeError('The num input layer is not one')
         torch.save(layer_input[0], TEMP_QUANTIZED_TENSOR_FILE)
         raise InterruptException
-
