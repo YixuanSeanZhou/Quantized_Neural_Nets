@@ -97,7 +97,6 @@ class StepAlgorithm:
             The quantized neuron.
         '''
         q = numpy.zeros(w.shape[0])
-        # q = numpy.copy(w)
         u = numpy.zeros(m)
         for t in range(w.shape[0]):
             X_analog = analog_layer_input[:, t]
@@ -141,19 +140,20 @@ class StepAlgorithm:
 
         # FIXME: This defeats the purpose, partially
         # radius
-        rad = alphabet * numpy.median(numpy.abs(W.flatten()))
-        layer_alphabet = rad * alphabet
+        rad = numpy.abs(W.flatten()).max()
+        print(rad)
+        layer_alphabet = 12 * rad * alphabet
 
         Q = numpy.zeros(W.shape)
         results = [pool.apply_async(StepAlgorithm._quantize_neuron, 
                                     args=(w, i, analog_layer_input, 
                                           quantized_layer_input, m,
                                           layer_alphabet)) 
-                                    for i, w in enumerate(W.T)]
+                                    for i, w in enumerate(W)]
         # join
-        for i in range(Q.shape[1]):
+        for i in range(Q.shape[0]):
             idx, q = results[i].get()
-            Q[:, idx] = q
+            Q[idx, :] = q
 
         # for i, w in enumerate(W):
         #     idx, q = StepAlgorithm._quantize_neuron(w, i, 
@@ -163,6 +163,8 @@ class StepAlgorithm:
         #     Q[idx, :] = q
 
         pool.close()
+        
+        print(numpy.linalg.norm(analog_layer_input.dot(W.T) - quantized_layer_input.dot(Q.T)))
 
         return Q
 
