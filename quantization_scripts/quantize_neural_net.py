@@ -176,6 +176,3 @@ class SaveInput:
         self.inputs.append(module_in[0])
         raise InterruptException
         
-
-    def clear(self):
-        self.outputs = []
