@@ -1,14 +1,12 @@
 from __future__ import annotations
 
-import numpy
+import numpy as np
 import multiprocessing as mp
 
-ANALOG_INPUT = 'ANALOG_INPUT'
-QUANTIZE_INPUT = 'QUANTIZE_INPUT'
 
 class StepAlgorithm:
     
-    def _nearest_alphabet(target_val: float, alphabet: numpy.array) -> float:
+    def _nearest_alphabet(target_val, alphabet):
         '''
         Return the aproximated result to the target by the alphabet.
         Parameters
@@ -22,15 +20,10 @@ class StepAlgorithm:
         float
             The element within the alphabet that is cloest to the target.
         '''
-
-        # torch.min -> min, min_idx
-        
-        return alphabet[numpy.argmin(abs(alphabet-target_val))]
+        return alphabet[np.argmin(np.abs(alphabet-target_val))]
 
 
-    def _quantize_weight(w: float, u: float,
-                         X: numpy.array, X_tilde: numpy.array,
-                         alphabet: numpy.array) -> float:
+    def _quantize_weight(w, u, X_analog, X_quantize, alphabet):
         '''
         Quantize a particular weight parameter.
         Parameters
@@ -54,21 +47,18 @@ class StepAlgorithm:
         '''
 
         # TODO: Is this simplification even necessary?
-        if numpy.linalg.norm(X_tilde, 2) < 10 ** (-16):
+        if np.linalg.norm(X_quantize, 2) < 10 ** (-16):
             return StepAlgorithm._nearest_alphabet(0, alphabet)
         
-        if abs(numpy.dot(X_tilde, u)) < 10 ** (-10):
+        if abs(np.dot(X_quantize, u)) < 10 ** (-10):
             return StepAlgorithm._nearest_alphabet(w, alphabet)
-        
-        target_val = numpy.dot(X_tilde, u + w * X) / (numpy.linalg.norm(X_tilde, 2) ** 2)
-        
+
+        target_val = np.dot(X_quantize, u + w * X_analog) / (np.linalg.norm(X_quantize, 2) ** 2)
         return StepAlgorithm._nearest_alphabet(target_val, alphabet)
 
     
-    def _quantize_neuron(w: numpy.array, neuron_idx: int, 
-                         analog_layer_input: numpy.array,
-                         quantized_layer_input: numpy.array,
-                         m: int, alphabet: numpy.array) -> numpy.array:
+    def _quantize_neuron(w, neuron_idx, analog_layer_input, quantized_layer_input,
+                         m, alphabet):
         '''
         Quantize one neuron of a layer.
         Parameters
@@ -90,9 +80,9 @@ class StepAlgorithm:
         numpy.array
             The quantized neuron.
         '''
-        q = numpy.zeros(w.shape[0])
-        u = numpy.zeros(m)
-        for t in range(w.shape[0]):
+        q = np.zeros(len(w))
+        u = np.zeros(m)
+        for t in range(len(w)):
             X_analog = analog_layer_input[:, t]
             X_quantize = quantized_layer_input[:, t]
             q[t] = StepAlgorithm._quantize_weight(w[t], u, 
@@ -103,11 +93,7 @@ class StepAlgorithm:
         return neuron_idx, q
 
 
-    def _quantize_layer(W: numpy.array,
-                        analog_layer_input: numpy.array,
-                        quantized_layer_input: numpy.array,
-                        m: int, alphabet: numpy.array,
-                        ) -> numpy.array:
+    def _quantize_layer(W, analog_layer_input, quantized_layer_input, m, alphabet):
         '''
         Quantize one layer in parallel.
         Parameters
@@ -131,11 +117,12 @@ class StepAlgorithm:
         pool = mp.Pool(mp.cpu_count())
 
         # FIXME: This defeats the purpose, partially
-        # radius
-        rad = numpy.abs(W.flatten()).max()
-        layer_alphabet = W.shape[1] *1e-2 * len(alphabet) * alphabet
+        # May move the layer_alphabet to quantize_neural_net.py
+        rad = np.abs(W).max()  # radius
+        layer_alphabet = alphabet
+        # layer_alphabet = W.shape[1] *1e-2 * len(alphabet) * alphabet
 
-        Q = numpy.zeros(W.shape)
+        Q = np.zeros_like(W)
         results = [pool.apply_async(StepAlgorithm._quantize_neuron, 
                                     args=(w, i, analog_layer_input, 
                                           quantized_layer_input, m,
@@ -154,7 +141,7 @@ class StepAlgorithm:
         #     Q[idx, :] = q
 
         pool.close()
-        
-        print(numpy.linalg.norm(analog_layer_input.dot(W.T) - quantized_layer_input.dot(Q.T)))
-
-        return Q
+        quantize_error = np.linalg.norm(analog_layer_input @ W.T  
+                            - quantized_layer_input @ Q.T, ord='fro')
+                            
+        return Q, quantize_error
