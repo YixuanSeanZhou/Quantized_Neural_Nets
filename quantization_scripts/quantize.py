@@ -16,6 +16,10 @@ if __name__ == '__main__':
     # load the data loader for training and testing
     train_loader, _, test_loader = load_data_fashion_mnist(batch_size, train_ratio=1, 
                                                 num_workers=num_workers)
+    
+    # model = torch.load('../models/fashion_mlp.pt', map_location=torch.device('cpu'))
+    # train_loader, _, test_loader = load_data_fashion_mnist(batch_size, train_ratio=1, 
+    #                                              num_workers=num_workers)
 
     # quantize the neural net
     quantizer = QuantizeNeuralNet(model, batch_size, train_loader, bits=3)

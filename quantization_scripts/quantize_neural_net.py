@@ -12,6 +12,7 @@ TEMP_ANALOG_TENSOR_FILE = 'temp_input_tensor_analog_file.pt'
 TEMP_QUANTIZED_TENSOR_FILE = 'temp_input_tensor_quantized_file.pt'
 
 LINEAR_MODULE_TYPE = nn.Linear
+CONV2D_MODULE_TYPE = nn.Conv2d
 
 class QuantizeNeuralNet():
     '''
