@@ -3,8 +3,6 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import numpy as np
-import os
-import numpy
 import copy
 
 from helper_tools import InterruptException
@@ -100,21 +98,21 @@ class QuantizeNeuralNet():
             analog_layer_input, quantized_layer_input \
                 = self._populate_linear_layer_input(layer_idx)
 
+            # Note that each row of W represents a neuron
             W = self.analog_network_layers[layer_idx].weight.data.numpy()
 
             layer_alphabet \
-                = numpy.mean(W.flatten()) * self.alphabet_scalar * self.alphabet
+                = np.abs(W).mean() * self.alphabet_scalar * self.alphabet
 
-            Q = StepAlgorithm._quantize_layer(W, 
+            Q, quantize_error = StepAlgorithm._quantize_layer(W, 
                                               analog_layer_input, 
                                               quantized_layer_input, 
                                               self.batch_size,
                                               layer_alphabet
                                               )
 
-            self.quantized_network_layers[layer_idx].weight.data = torch.tensor(Q).float()
-
-            print(f'Finished quantizing layer {layer_idx}')
+            self.quantized_network_layers[layer_idx].weight.data = torch.Tensor(Q).float()
+            print(f'The quantization error of layer {layer_idx} is {quantize_error}.')
 
         return self.quantized_network
 
@@ -173,6 +171,5 @@ class SaveInput:
     def __call__(self, module, module_in, module_out):
         if len(module_in) != 1:
             raise TypeError('The number of input layer is not equal to one!')
-        self.inputs.append(module_in[0])
+        self.inputs.append(module_in[0].numpy())
         raise InterruptException
-        
