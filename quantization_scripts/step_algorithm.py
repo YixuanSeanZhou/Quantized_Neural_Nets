@@ -119,7 +119,7 @@ class StepAlgorithm:
         # FIXME: This defeats the purpose, partially
         # May move the layer_alphabet to quantize_neural_net.py
         rad = np.abs(W).max()  # radius
-        layer_alphabet = alphabet
+        layer_alphabet = alphabet * rad
         # layer_alphabet = W.shape[1] *1e-2 * len(alphabet) * alphabet
 
         Q = np.zeros_like(W)

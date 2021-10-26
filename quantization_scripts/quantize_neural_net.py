@@ -101,14 +101,11 @@ class QuantizeNeuralNet():
             # Note that each row of W represents a neuron
             W = self.analog_network_layers[layer_idx].weight.data.numpy()
 
-            layer_alphabet \
-                = np.abs(W).mean() * self.alphabet_scalar * self.alphabet
-
             Q, quantize_error = StepAlgorithm._quantize_layer(W, 
                                               analog_layer_input, 
                                               quantized_layer_input, 
                                               self.batch_size,
-                                              layer_alphabet
+                                              self.alphabet * self.alphabet_scalar
                                               )
 
             self.quantized_network_layers[layer_idx].weight.data = torch.Tensor(Q).float()
