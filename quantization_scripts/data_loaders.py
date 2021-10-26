@@ -8,7 +8,7 @@ def get_dataloader_workers():
     return mp.cpu_count() - 1
 
 
-def load_data_fashion_mnist(batch_size, resize=None, train_ratio=0.8): 
+def load_data_fashion_mnist(batch_size, resize=None, train_ratio=0.8, num_workers=get_dataloader_workers()): 
     """Download the Fashion-MNIST dataset and then load it into memory."""
     trans = [transforms.ToTensor()]
     if resize:
@@ -28,15 +28,15 @@ def load_data_fashion_mnist(batch_size, resize=None, train_ratio=0.8):
     train_data, val_data = random_split(mnist_train, [train_size, test_size], 
                                 generator=torch.Generator().manual_seed(42))   
     train_loader = DataLoader(train_data, batch_size, shuffle=True,
-                        num_workers=get_dataloader_workers())
+                        num_workers=num_workers)
     val_loader =  DataLoader(val_data, batch_size, shuffle=False,
-                        num_workers=get_dataloader_workers())
-    test_loader = DataLoader(mnist_test, batch_size, shuffle=False,
-                            num_workers=get_dataloader_workers())             
+                        num_workers=num_workers)
+    test_loader = DataLoader(mnist_test, batch_size=1, shuffle=False,
+                            num_workers=num_workers)             
     return train_loader, val_loader, test_loader
 
 
-def load_data_mnist(batch_size, resize=None, train_ratio=0.8): 
+def load_data_mnist(batch_size, resize=None, train_ratio=0.8, num_workers=get_dataloader_workers()): 
     """Download the MNIST dataset and then load it into memory."""
     trans = [transforms.ToTensor()]
     if resize:
@@ -56,9 +56,9 @@ def load_data_mnist(batch_size, resize=None, train_ratio=0.8):
     train_data, val_data = random_split(mnist_train, [train_size, test_size], 
                                 generator=torch.Generator().manual_seed(42))   
     train_loader = DataLoader(train_data, batch_size, shuffle=True,
-                        num_workers=get_dataloader_workers())
+                        num_workers=num_workers)
     val_loader =  DataLoader(val_data, batch_size, shuffle=False,
-                        num_workers=get_dataloader_workers())
-    test_loader = DataLoader(mnist_test, batch_size, shuffle=False,
-                            num_workers=get_dataloader_workers())             
+                        num_workers=num_workers)
+    test_loader = DataLoader(mnist_test, batch_size=1, shuffle=False,
+                            num_workers=num_workers)             
     return train_loader, val_loader, test_loader

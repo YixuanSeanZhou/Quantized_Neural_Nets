@@ -10,24 +10,22 @@ import matplotlib.pyplot as plt
 from data_loaders import load_data_mnist, load_data_fashion_mnist
 
 # If we need to train complicated models, then we enable GPUs.
-# Will do this later.
 device = "cuda" if torch.cuda.is_available() else "cpu"
-print(f'{device} is available.')
-
 
 class MLP(nn.Module):
     '''
-    The most navie MLP network with input 28*28 -> 256 -> 10 -> softmax
+    Add new annotations later.
     '''
     def __init__(self, input_dim, hidden_dim, out_dim):
         super().__init__()
         self.input_dim = input_dim
         self.hidden_dim = hidden_dim
         self.out_dim = out_dim
-        # Define layers of MLP
-        self.layer1 = nn.Linear(input_dim, hidden_dim[0], bias=False)
-        self.layer2 = nn.Linear(hidden_dim[0], hidden_dim[1], bias=False)
-        self.layer3 = nn.Linear(hidden_dim[1], out_dim, bias=False)
+        # Define layers of MLP. Using nn.Sequential is also OK.
+        self.layer1 = nn.Linear(input_dim, hidden_dim[0], bias=True)
+        self.layer2 = nn.Linear(hidden_dim[0], hidden_dim[1], bias=True)
+        self.layer3 = nn.Linear(hidden_dim[1], hidden_dim[2], bias=True)
+        self.layer4 = nn.Linear(hidden_dim[2], out_dim, bias=True)
 
     def forward(self, X):
         X = X.view(-1, self.input_dim)
@@ -36,6 +34,8 @@ class MLP(nn.Module):
         X = self.layer2(X)
         X = F.relu(X)
         X = self.layer3(X)
+        X = F.relu(X)
+        X = self.layer4(X)
         return F.log_softmax(X, dim=1)
 
 def train_mlp(train_loader, val_loader, model, loss_fn, optimizer, n_epochs):
@@ -49,8 +49,8 @@ def train_mlp(train_loader, val_loader, model, loss_fn, optimizer, n_epochs):
         model.train()
         batch_losses = []
         for x_batch, y_batch in train_loader:
-            output = model(x_batch)
-            loss = loss_fn(output, y_batch)
+            output = model(x_batch.to(device))
+            loss = loss_fn(output, y_batch.to(device))
             loss.backward()
             optimizer.step()
             optimizer.zero_grad()
@@ -62,13 +62,13 @@ def train_mlp(train_loader, val_loader, model, loss_fn, optimizer, n_epochs):
         batch_val_losses = []
         with torch.no_grad():
             for x_val, y_val in val_loader:
-                val_output = model(x_val)
-                val_loss = loss_fn(val_output, y_val).item()
+                output = model(x_val.to(device))
+                val_loss = loss_fn(output, y_val.to(device)).item()
                 batch_val_losses.append(val_loss)
             validation_loss = np.mean(batch_val_losses)
             val_losses.append(validation_loss)
         
-        if (epoch <= 10) | (epoch % 10 == 0):
+        if (epoch <= 20) | (epoch % 10 == 0):
             print(
                 f"[{epoch}/{n_epochs}] Training loss: {training_loss:.4f}\t \
                 Validation loss: {validation_loss:.4f}"
@@ -76,66 +76,42 @@ def train_mlp(train_loader, val_loader, model, loss_fn, optimizer, n_epochs):
     return train_losses, val_losses
 
 
-def test_mlp(model: nn.Module, 
-             test_loader: DataLoader,
-             torch_loss_function: function):
-    loss_function = torch_loss_function()
-    test_loss = 0.0
-    class_correct = list(0. for i in range(10))
-    class_total = list(0. for i in range(10))
-
+def test_mlp(test_loader, model):
+    """
+    Add annotations later.
+    """
+    predictions = []
+    labels = []
     model.eval()
 
-    for i, (features, labels) in enumerate(test_loader):
-
-        output = model(features)
-
-        loss = loss_function(output, labels)
-
-        test_loss += loss.item()
-
-        _, pred = torch.max(output, 1)
-        # compare predictions to true label
-        correct = np.squeeze(pred.eq(labels.data.view_as(pred)))
-        # calculate test accuracy for each object class
-        for i in range(len(labels)):
-            label = labels.data[i]
-            class_correct[label] += correct[i].item()
-            class_total[label] += 1
-    # calculate and print avg test loss
-    test_loss = test_loss/i
-    print('Test Loss: {:.6f}\n'.format(test_loss))
-    for i in range(10):
-        if class_total[i] > 0:
-            print('Test Accuracy of %5s: %2d%% (%2d/%2d)' % (
-                str(i), 100 * class_correct[i] / class_total[i],
-                np.sum(class_correct[i]), np.sum(class_total[i])))
-        else:
-            print('Test Accuracy of %5s: N/A (no training examples)' % (class_total[i]))
-    print('\nTest Accuracy (Overall): %2d%% (%2d/%2d)' % (
-        100. * np.sum(class_correct) / np.sum(class_total),
-        np.sum(class_correct), np.sum(class_total)))
+    with torch.no_grad():
+        for x_test, y_test in test_loader:
+            _, pred = model(x_test.to(device)).max(dim=1)
+            predictions.append(pred.cpu().numpy())
+            labels.append(y_test.numpy())
+    predictions = np.concatenate(predictions)
+    labels = np.concatenate(labels)
+    return predictions, labels
 
 
 if __name__ == '__main__':
+    print(f'{device} is available.')
     batch_size = 16
     input_dim = 28 * 28
-    hidden_dim = [512, 256]
+    hidden_dim = [512, 256, 128]
     out_dim = 10
-    n_epochs = 2
-    learning_rate = 1e-3
+    n_epochs = 15
+    learning_rate = 5 * 1e-4
     weight_decay = 1e-6 
-
-    train_loader, val_loader, test_loader = load_data_mnist(batch_size, train_ratio=0.8)
-    model = MLP(input_dim, hidden_dim, out_dim)
+    num_workers = 4  # num_workers is around 4 * num_of_GPUs
+    train_loader, val_loader, test_loader = load_data_fashion_mnist(batch_size, train_ratio=0.8, 
+                                                num_workers=num_workers)
+    model = MLP(input_dim, hidden_dim, out_dim).to(device)
     loss_fn = nn.NLLLoss()
     optimizer = optim.Adam(model.parameters(), lr=learning_rate, weight_decay=weight_decay)
     train_losses, val_losses = train_mlp(train_loader, val_loader, model, loss_fn, optimizer, n_epochs)
-    plt.plot(train_losses, label="Training loss")
-    plt.plot(val_losses, label="Validation loss")
-    plt.legend()
-    plt.title("Losses")
-    plt.show()
-
-    # test_mlp(mlp, test_loader, loss_function)
-    torch.save(model, '../models/mlp.pt')
+    # Calculate testing accuracy:
+    predictions, labels = test_mlp(test_loader, model)
+    test_accuracy = np.sum(predictions == labels) / len(labels)
+    print(f'The testing accuracy is: {test_accuracy}.')
+    torch.save(model, '../models/fashion_mlp.pt')
