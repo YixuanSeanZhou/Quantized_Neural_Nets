@@ -46,7 +46,6 @@ class StepAlgorithm:
             The quantized value.
         '''
 
-        # TODO: Is this simplification even necessary?
         if np.linalg.norm(X_quantize, 2) < 10 ** (-16):
             return StepAlgorithm._nearest_alphabet(0, alphabet)
         
@@ -118,7 +117,8 @@ class StepAlgorithm:
 
         # FIXME: This defeats the purpose, partially
         # May move the layer_alphabet to quantize_neural_net.py
-        rad = np.abs(W).max()  # radius
+        # rad = np.median(np.abs(W))  # radius
+        rad = np.abs(W).max()
         layer_alphabet = alphabet * rad
         # layer_alphabet = W.shape[1] *1e-2 * len(alphabet) * alphabet
 
