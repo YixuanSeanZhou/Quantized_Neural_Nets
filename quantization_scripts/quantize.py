@@ -1,21 +1,25 @@
 import torch
 import torch.nn as nn
-import torch.nn.functional as functional
+import torch.nn.functional as F
+import numpy as np
 
 from quantize_neural_net import QuantizeNeuralNet
-from train_mlp import train_mlp, test_mlp, MLP
-from data_loaders import load_data_mnist
+from train_mlp import test_mlp, MLP
+from data_loaders import load_data_mnist, load_data_fashion_mnist
 
 if __name__ == '__main__':
-    batch_size = 50
+    batch_size = 32  # batch_size used for quantization
+    num_workers = 4
+    # load the model to be quantized
+    model = torch.load('../models/mnist_mlp.pt', map_location=torch.device('cpu'))
 
-    mlp = torch.load('../models/mlp.pt')
-    train_loader, test_loader = load_data_mnist(batch_size)
+    # load the data loader for training and testing
+    train_loader, _, test_loader = load_data_mnist(batch_size, train_ratio=1, 
+                                                num_workers=num_workers)
 
-    loss_function = nn.NLLLoss
-    optimizer = torch.optim.Adam
-
-    quantizer = QuantizeNeuralNet(mlp, batch_size, train_loader, 10)
+    # quantize the neural net
+    quantizer = QuantizeNeuralNet(model, batch_size, train_loader, bits=2)
     quantized_mlp = quantizer.quantize_network()
-
-    test_mlp(quantized_mlp, test_loader, nn.NLLLoss)
+    predictions, labels = test_mlp(test_loader, quantized_mlp)
+    test_accuracy = np.sum(predictions == labels) / len(labels)
+    print(f'The testing accuracy is: {test_accuracy}.')
