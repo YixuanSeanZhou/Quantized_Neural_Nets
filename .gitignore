@@ -135,3 +135,4 @@ models/*
 quantization_scripts/*.pt
 .DS_Store
 *.DS_Store
+data/
