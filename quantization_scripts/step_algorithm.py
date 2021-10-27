@@ -79,15 +79,9 @@ class StepAlgorithm:
         numpy.array
             The quantized neuron.
         '''
-<<<<<<< HEAD
-        q = numpy.zeros(w.shape[0])
-        u = numpy.zeros(m)
-        for t in range(w.shape[0]):
-=======
         q = np.zeros(len(w))
         u = np.zeros(m)
         for t in range(len(w)):
->>>>>>> main
             X_analog = analog_layer_input[:, t]
             X_quantize = quantized_layer_input[:, t]
             q[t] = StepAlgorithm._quantize_weight(w[t], u, 
