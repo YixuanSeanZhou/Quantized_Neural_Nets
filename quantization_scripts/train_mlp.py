@@ -21,6 +21,7 @@ class MLP(nn.Module):
         self.input_dim = input_dim
         self.hidden_dim = hidden_dim
         self.out_dim = out_dim
+        # hidden_dim = [512, 256, 128]
         # Define layers of MLP. Using nn.Sequential is also OK.
         self.layer1 = nn.Linear(input_dim, hidden_dim[0], bias=True)
         self.layer2 = nn.Linear(hidden_dim[0], hidden_dim[1], bias=True)
@@ -98,9 +99,9 @@ if __name__ == '__main__':
     print(f'{device} is available.')
     batch_size = 16
     input_dim = 28 * 28
-    hidden_dim = [512, 256, 128]
+    hidden_dim = [512 * 4, 256, 128]
     out_dim = 10
-    n_epochs = 15
+    n_epochs = 5
     learning_rate = 5 * 1e-4
     weight_decay = 1e-6 
     num_workers = 4  # num_workers is around 4 * num_of_GPUs

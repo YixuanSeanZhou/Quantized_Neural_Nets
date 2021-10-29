@@ -36,7 +36,7 @@ class CNN(nn.Module):
         x = F.relu(self.fc1(x))
         x = F.relu(self.fc2(x))
         x = self.fc3(x)
-        return x
+        return F.log_softmax(x, dim=1)
 
 
 
@@ -116,4 +116,4 @@ if __name__ == '__main__':
     predictions, labels = test_mlp(test_loader, model)
     test_accuracy = np.sum(predictions == labels) / len(labels)
     print(f'The testing accuracy is: {test_accuracy}.')
-    torch.save(model, '../models/fashion_mlp.pt')
+    torch.save(model, '../models/conv2d_kmlp.pt')
