@@ -47,7 +47,6 @@ class StepAlgorithm:
 
         # 1.7
 
-
         return alphabet[np.argmin(np.abs(alphabet-target_val))]
 
 
@@ -161,16 +160,16 @@ class StepAlgorithm:
                                           layer_alphabet)) 
                                     for i, w in enumerate(W)]
         # join
-        for i in range(Q.shape[0]):
-            idx, q = results[i].get()
-            Q[idx, :] = q
-
-        # for i, w in enumerate(W):
-        #     idx, q = StepAlgorithm._quantize_neuron(w, i, 
-        #                                         analog_layer_input, 
-        #                                         quantized_layer_input,
-        #                                         m , layer_alphabet)
+        # for i in range(Q.shape[0]):
+        #     idx, q = results[i].get()
         #     Q[idx, :] = q
+
+        for i, w in enumerate(W):
+            idx, q = StepAlgorithm._quantize_neuron(w, i, 
+                                                analog_layer_input, 
+                                                quantized_layer_input,
+                                                m , layer_alphabet)
+            Q[idx, :] = q
 
         pool.close()
         quantize_error = np.linalg.norm(analog_layer_input @ W.T  

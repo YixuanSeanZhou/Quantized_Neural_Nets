@@ -59,8 +59,9 @@ class QuantizeNeuralNet():
         # FIXME: alphabet_scaler should probably not be used like this
         self.alphabet_scalar = alphabet_scalar
         self.bits = bits
-        # self.alphabet = np.linspace(-1, 1, num=int(2 ** bits))
-        self.alphabet = np.array([0, -1, 1])
+        self.alphabet = np.linspace(-1, 1, num=int(2 ** bits))
+        np.append(self.alphabet, 0)
+        # self.alphabet = np.array([0, -1, 1])
         self.ignore_layers = ignore_layers
 
         # create a copy which is our quantized network
@@ -99,17 +100,42 @@ class QuantizeNeuralNet():
             analog_layer_input, quantized_layer_input \
                 = self._populate_linear_layer_input(layer_idx)
 
-            # Note that each row of W represents a neuron
-            W = self.analog_network_layers[layer_idx].weight.data.numpy()
+            if type(self.analog_network_layers[layer_idx]) == LINEAR_MODULE_TYPE:
 
-            Q, quantize_error, relative_quantize_error = StepAlgorithm._quantize_layer(W, 
-                                              analog_layer_input, 
-                                              quantized_layer_input, 
-                                              self.batch_size,
-                                              self.alphabet * self.alphabet_scalar
-                                              )
+                # Note that each row of W represents a neuron
+                W = self.analog_network_layers[layer_idx].weight.data.numpy()
 
-            self.quantized_network_layers[layer_idx].weight.data = torch.Tensor(Q).float()
+                Q, quantize_error, relative_quantize_error = StepAlgorithm._quantize_layer(W, 
+                                                analog_layer_input, 
+                                                quantized_layer_input, 
+                                                analog_layer_input.shape[0],
+                                                self.alphabet * self.alphabet_scalar
+                                                )
+
+                self.quantized_network_layers[layer_idx].weight.data = torch.Tensor(Q).float()
+
+            elif type(self.analog_network_layers[layer_idx]) == CONV2D_MODULE_TYPE:
+
+                # Note that each row of W represents a neuron
+                W = self.analog_network_layers[layer_idx].weight.data.numpy()
+
+                W_shape = W.shape
+
+                kernel_size = self.analog_network_layers[layer_idx].kernel_size
+
+                W = W.reshape(-1, kernel_size[0] * kernel_size[1])
+
+                Q, quantize_error, relative_quantize_error = StepAlgorithm._quantize_layer(W, 
+                                            analog_layer_input, 
+                                            quantized_layer_input, 
+                                            analog_layer_input.shape[0],
+                                            self.alphabet * self.alphabet_scalar
+                                            )
+                
+                Q = Q.reshape(W_shape)
+
+                self.quantized_network_layers[layer_idx].weight.data = torch.Tensor(Q).float()
+
             print(f'The quantization error of layer {layer_idx} is {quantize_error}.')
             print(f'The relative quantization error of layer {layer_idx} is {relative_quantize_error}.')
             print()
@@ -136,11 +162,20 @@ class QuantizeNeuralNet():
         # get data
         raw_input_data, _ = next(self.data_loader_iter)
 
+        analog_layer = self.analog_network_layers[layer_idx]
+
         # save_input instances
-        if type(self.analog_network_layers[layer_idx]) == LINEAR_MODULE_TYPE:
+        if type(analog_layer) == LINEAR_MODULE_TYPE:
             save_input = SaveInputMLP()
-        elif type(self.analog_network_layers[layer_idx]) == CONV2D_MODULE_TYPE:
-            save_input = SaveInputConv2d()
+        elif type(analog_layer) == CONV2D_MODULE_TYPE:
+            save_input = SaveInputConv2d(
+                kernel_size=analog_layer.kernel_size,
+                dilation=analog_layer.dilation,
+                padding=analog_layer.padding,
+                stride=analog_layer.stride
+            )
+        else:
+            raise TypeError(f'The layer type {type(analog_layer)} is not currently supported')
 
         # attach handles to both analog and quantize layer
         analog_handle = self.analog_network_layers[layer_idx].register_forward_hook(save_input)
@@ -192,13 +227,14 @@ class SaveInputConv2d:
         -----------
         kernal_size: int or tuple
             The size of the layer's kernel
-        dialtion: int
+        dilation: int or tuple
             The dialation of the conv2d layer who takes the input
-        padding: iint
+        padding: iint or tuple
             The padding used of the conv2d layer who takes the input
-        stride: int
+        stride: int or tuple
             The stride of of the conv2d layer who takes the input
         '''
+        self.kernel_size_2d = kernel_size[0] * kernel_size[1]
         self.unfolder = torch.nn.Unfold(kernel_size, dilation, padding, stride)
         self.inputs = []
         
@@ -206,7 +242,11 @@ class SaveInputConv2d:
     def __call__(self, module, module_in, module_out):
         if len(module_in) != 1:
             raise TypeError('The number of input layer is not equal to one!')
-        self.inputs.append(self.unfolder(module_in[0]))
+        unfolded = self.unfolder(module_in[0])
+        unfolded = torch.transpose(unfolded, -1, -2)
+        # FIXME: this might need revisit
+        unfolded = unfolded.reshape(-1, self.kernel_size_2d)
+        self.inputs.append(unfolded.numpy())
         raise InterruptException
     
 
