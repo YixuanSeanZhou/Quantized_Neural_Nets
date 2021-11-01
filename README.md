@@ -1,5 +1,13 @@
 # Quantized_Neural_Nets
 
+## Oct. 21th, 2021
+
+### Yixuan's Update
+
+Set up the pipeline of training `MLP`. 
+
+TODO: Currently the accuracy depends highly on radius, need figure out how to deal with it.
+
 ## Oct. 17th, 2021
 
 ### Yixuan's Update

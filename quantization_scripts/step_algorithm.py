@@ -20,6 +20,33 @@ class StepAlgorithm:
         float
             The element within the alphabet that is cloest to the target.
         '''
+        # if regular alphabet
+
+        # Z 
+
+        # round(Z) then truncate
+
+        # if rounded result > max, set to max
+        # if round results < -max, set to -max
+
+        # x / c
+        # multiply by boolean expression
+
+        # (abs(x) <= max) * rounded(x) + (abs(x) > max) * sign(x) * max
+        # rescale at the end
+
+        # work for odd alphabets
+
+        # even alphabet use the floor
+
+        # q=de*floor(u/de)+de/2;              u is x
+        # q=q.*(abs(u)<=(K-1/2)*de) + sign(q).*(K-1/2).*de.*(abs(u)> (K-1/2)*de);
+
+        # [-3, -1, 1, 3]
+        # delta = 2
+
+        # 1.7
+
         return alphabet[np.argmin(np.abs(alphabet-target_val))]
 
 
@@ -118,8 +145,12 @@ class StepAlgorithm:
         # FIXME: This defeats the purpose, partially
         # May move the layer_alphabet to quantize_neural_net.py
         # rad = np.median(np.abs(W))  # radius
+        #rad = np.abs(W).max()
+        
         rad = np.abs(W).max()
-        layer_alphabet = alphabet * rad
+
+        layer_alphabet = alphabet * rad / 2
+
         # layer_alphabet = W.shape[1] *1e-2 * len(alphabet) * alphabet
 
         Q = np.zeros_like(W)
@@ -129,19 +160,20 @@ class StepAlgorithm:
                                           layer_alphabet)) 
                                     for i, w in enumerate(W)]
         # join
-        for i in range(Q.shape[0]):
-            idx, q = results[i].get()
-            Q[idx, :] = q
-
-        # for i, w in enumerate(W):
-        #     idx, q = StepAlgorithm._quantize_neuron(w, i, 
-        #                                         analog_layer_input, 
-        #                                         quantized_layer_input,
-        #                                         m , layer_alphabet)
+        # for i in range(Q.shape[0]):
+        #     idx, q = results[i].get()
         #     Q[idx, :] = q
+
+        for i, w in enumerate(W):
+            idx, q = StepAlgorithm._quantize_neuron(w, i, 
+                                                analog_layer_input, 
+                                                quantized_layer_input,
+                                                m , layer_alphabet)
+            Q[idx, :] = q
 
         pool.close()
         quantize_error = np.linalg.norm(analog_layer_input @ W.T  
                             - quantized_layer_input @ Q.T, ord='fro')
-                            
-        return Q, quantize_error
+        relative_quantize_error = np.linalg.norm(analog_layer_input @ W.T  
+                                 - quantized_layer_input @ Q.T, ord='fro') / np.linalg.norm(analog_layer_input @ W.T, ord='fro')
+        return Q, quantize_error, relative_quantize_error

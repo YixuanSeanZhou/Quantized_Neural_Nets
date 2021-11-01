@@ -136,3 +136,4 @@ quantization_scripts/*.pt
 quantization_scripts/test.ipynb
 .DS_Store
 *.DS_Store
+data/
