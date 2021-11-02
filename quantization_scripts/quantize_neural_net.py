@@ -108,7 +108,7 @@ class QuantizeNeuralNet():
 
         layers_to_quantize = [
             i for i, layer in enumerate(self.quantized_network_layers) 
-                if type(layer) == LINEAR_MODULE_TYPE or CONV2D_MODULE_TYPE
+                if type(layer) in [LINEAR_MODULE_TYPE, CONV2D_MODULE_TYPE]  # Fix a bug
                     and i not in self.ignore_layers
                 ]
 
