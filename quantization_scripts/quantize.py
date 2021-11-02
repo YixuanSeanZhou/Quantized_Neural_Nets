@@ -1,13 +1,21 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+
 import numpy as np
+
+
+import torchvision.models as models
+from torchvision import transforms
 
 from quantize_neural_net import QuantizeNeuralNet
 from train_mlp import test_mlp, MLP
 from data_loaders import load_data_mnist, load_data_fashion_mnist, load_data_kmnist
 
 from train_conv2d import CNN
+
+def augment(x):
+    return x.repeat(3, 1, 1)
 
 if __name__ == '__main__':
     batch_size = 32  # batch_size used for quantization
@@ -23,12 +31,21 @@ if __name__ == '__main__':
     # train_loader, _, test_loader = load_data_fashion_mnist(batch_size, train_ratio=1, 
     #                                              num_workers=num_workers)
 
-    model = torch.load('../models/conv2d_kmlp.pt', map_location=torch.device('cpu'))
-    train_loader, _, test_loader = load_data_kmnist(batch_size, train_ratio=1, 
-                                                    num_workers=num_workers)
+    # model = torch.load('../models/conv2d_kmlp.pt', map_location=torch.device('cpu'))
+    alexnet = models.alexnet()
 
+    AlexTransform = [
+                    transforms.Resize((63, 63)),
+                    transforms.ToTensor(),
+                    augment
+                    ]
+
+    model = torch.load('../models/alex_fashion_mnist.pt', map_location=torch.device('cpu'))
+    train_loader, _, test_loader = load_data_fashion_mnist(batch_size, transform=AlexTransform, train_ratio=1, 
+                                                            num_workers=num_workers)
+    
     # quantize the neural net
-    quantizer = QuantizeNeuralNet(model, batch_size, train_loader, bits=3)
+    quantizer = QuantizeNeuralNet(model, batch_size, train_loader, bits=4)
     quantized_mlp = quantizer.quantize_network()
     predictions, labels = test_mlp(test_loader, quantized_mlp)
     test_accuracy = np.sum(predictions == labels) / len(labels)

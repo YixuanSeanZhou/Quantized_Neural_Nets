@@ -4,23 +4,21 @@ from torch.utils.data import Dataset, DataLoader, random_split
 from torchvision import transforms
 import multiprocessing as mp
 
+
+
 def get_dataloader_workers():
     return mp.cpu_count() - 1
 
-
-def load_data_fashion_mnist(batch_size, resize=None, train_ratio=0.8, num_workers=get_dataloader_workers()): 
+def load_data_fashion_mnist(batch_size, transform=[transforms.ToTensor()], train_ratio=0.8, num_workers=get_dataloader_workers()): 
     """Download the Fashion-MNIST dataset and then load it into memory."""
-    trans = [transforms.ToTensor()]
-    if resize:
-        trans.insert(0, transforms.Resize(resize))
-    trans = transforms.Compose(trans)
+    transform = transforms.Compose(transform)
     mnist_train = torchvision.datasets.FashionMNIST("../data",
                                                     train=True,
-                                                    transform=trans,
+                                                    transform=transform,
                                                     download=True)
     mnist_test = torchvision.datasets.FashionMNIST("../data",
                                                    train=False,
-                                                   transform=trans,
+                                                   transform=transform,
                                                    download=True)
     train_size = int(len(mnist_train) * train_ratio)
     test_size =  len(mnist_train) - train_size
@@ -36,19 +34,16 @@ def load_data_fashion_mnist(batch_size, resize=None, train_ratio=0.8, num_worker
     return train_loader, val_loader, test_loader
 
 
-def load_data_mnist(batch_size, resize=None, train_ratio=0.8, num_workers=get_dataloader_workers()): 
+def load_data_mnist(batch_size, transform=[transforms.ToTensor()], train_ratio=0.8, num_workers=get_dataloader_workers()): 
     """Download the MNIST dataset and then load it into memory."""
-    trans = [transforms.ToTensor()]
-    if resize:
-        trans.insert(0, transforms.Resize(resize))
-    trans = transforms.Compose(trans)
+    transform = transforms.Compose(transform)
     mnist_train = torchvision.datasets.MNIST("../data",
                                              train=True,
-                                             transform=trans,
+                                             transform=transform,
                                              download=True)
     mnist_test = torchvision.datasets.MNIST("../data",
                                             train=False,
-                                            transform=trans,
+                                            transform=transform,
                                             download=True)
     train_size = int(len(mnist_train) * train_ratio)
     test_size =  len(mnist_train) - train_size
@@ -64,19 +59,16 @@ def load_data_mnist(batch_size, resize=None, train_ratio=0.8, num_workers=get_da
     return train_loader, val_loader, test_loader
 
 
-def load_data_kmnist(batch_size, resize=None, train_ratio=0.8, num_workers=get_dataloader_workers()): 
+def load_data_kmnist(batch_size, transform=[transforms.ToTensor()], train_ratio=0.8, num_workers=get_dataloader_workers()): 
     """Download the K-MNIST dataset and then load it into memory."""
-    trans = [transforms.ToTensor()]
-    if resize:
-        trans.insert(0, transforms.Resize(resize))
-    trans = transforms.Compose(trans)
+    transform = transforms.Compose(transform)
     mnist_train = torchvision.datasets.KMNIST("../data",
                                                     train=True,
-                                                    transform=trans,
+                                                    transform=transform,
                                                     download=True)
     mnist_test = torchvision.datasets.KMNIST("../data",
                                                    train=False,
-                                                   transform=trans,
+                                                   transform=transform,
                                                    download=True)
     train_size = int(len(mnist_train) * train_ratio)
     test_size =  len(mnist_train) - train_size
@@ -90,3 +82,4 @@ def load_data_kmnist(batch_size, resize=None, train_ratio=0.8, num_workers=get_d
     test_loader = DataLoader(mnist_test, batch_size=1, shuffle=False,
                             num_workers=num_workers)             
     return train_loader, val_loader, test_loader
+

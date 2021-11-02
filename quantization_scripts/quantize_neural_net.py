@@ -60,7 +60,7 @@ class QuantizeNeuralNet():
         self.alphabet_scalar = alphabet_scalar
         self.bits = bits
         self.alphabet = np.linspace(-1, 1, num=int(2 ** bits))
-        np.append(self.alphabet, 0)
+        #np.append(self.alphabet, 0)
         # self.alphabet = np.array([0, -1, 1])
         self.ignore_layers = ignore_layers
 
@@ -71,6 +71,7 @@ class QuantizeNeuralNet():
         #     self.analog_network.outputdim
         #     )
         # self.quantized_network.load_state_dict(self.analog_network.state_dict())
+        
         self.quantized_network = copy.deepcopy(self.analog_network)
         # self.quantized_network.load_state_dict(self.analog_network.state_dict())
         # print(type(self.quantized_network))
@@ -92,9 +93,11 @@ class QuantizeNeuralNet():
 
         layers_to_quantize = [
             i for i, layer in enumerate(self.quantized_network.children()) 
-                if type(layer) == LINEAR_MODULE_TYPE or CONV2D_MODULE_TYPE
+                if type(layer) == LINEAR_MODULE_TYPE or type(layer) == CONV2D_MODULE_TYPE
                     and i not in self.ignore_layers
                 ]
+        
+        print(layers_to_quantize)
 
         for layer_idx in layers_to_quantize:
             analog_layer_input, quantized_layer_input \
@@ -244,6 +247,12 @@ class SaveInputConv2d:
             raise TypeError('The number of input layer is not equal to one!')
         unfolded = self.unfolder(module_in[0])
         unfolded = torch.transpose(unfolded, -1, -2)
+
+        # (batch, c * pi(kernel), num_window)
+        # (batch, num_window, c* pi(kernel))
+
+        # (batch * num_window * c, pi(kernel))
+
         # FIXME: this might need revisit
         unfolded = unfolded.reshape(-1, self.kernel_size_2d)
         self.inputs.append(unfolded.numpy())
