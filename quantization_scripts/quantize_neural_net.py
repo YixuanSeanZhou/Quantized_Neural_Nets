@@ -132,29 +132,24 @@ class QuantizeNeuralNet():
 
             elif type(self.analog_network_layers[layer_idx]) == CONV2D_MODULE_TYPE:
 
-                # Note that each row of W represents a neuron
-                W = self.analog_network_layers[layer_idx].weight.data.numpy()
-
+                W = self.analog_network_layers[layer_idx].weight.data 
+                # W has shape (out_channels, in_channesl, k_size[0], k_size[1])
                 W_shape = W.shape
-
-                kernel_size = self.analog_network_layers[layer_idx].kernel_size
-
-                W = W.reshape(-1, kernel_size[0] * kernel_size[1])
-
+                
+                W = W.view(W.size(0), -1).numpy() # shape (out_channels, in_channesl*k_size[0]*k_size[1])
+                # each row of W is a neuron (vectorized sliding block)
+                
                 Q, quantize_error, relative_quantize_error = StepAlgorithm._quantize_layer(W, 
                                             analog_layer_input, 
                                             quantized_layer_input, 
                                             analog_layer_input.shape[0],
                                             self.alphabet * self.alphabet_scalar
                                             )
-                
-                Q = Q.reshape(W_shape)
 
-                self.quantized_network_layers[layer_idx].weight.data = torch.Tensor(Q).float()
-
+                self.quantized_network_layers[layer_idx].weight.data = torch.Tensor(Q).float().view(W_shape)
+            
             print(f'The quantization error of layer {layer_idx} is {quantize_error}.')
-            print(f'The relative quantization error of layer {layer_idx} is {relative_quantize_error}.')
-            print()
+            print(f'The relative quantization error of layer {layer_idx} is {relative_quantize_error}.\n')
 
         return self.quantized_network
 
@@ -235,7 +230,7 @@ class SaveInputConv2d:
     This class is useed to store inputs from original/quantizeed neural netwroks
     for conv layers.
     '''
-    def __init__(self, kernel_size, dilation=1, padding=0, stride=1):
+    def __init__(self, kernel_size, dilation, padding, stride):
         '''
         Init the SaveInputConv2d object
         
@@ -250,37 +245,35 @@ class SaveInputConv2d:
         stride: int or tuple
             The stride of of the conv2d layer who takes the input
         '''
-        self.kernel_size_2d = kernel_size[0] * kernel_size[1]
-        self.unfolder = torch.nn.Unfold(kernel_size, dilation, padding, stride)
+        self.unfolder = nn.Unfold(kernel_size, dilation, padding, stride)
         self.inputs = []
         
 
     def __call__(self, module, module_in, module_out):
         if len(module_in) != 1:
             raise TypeError('The number of input layer is not equal to one!')
-        unfolded = self.unfolder(module_in[0])
-        unfolded = torch.transpose(unfolded, -1, -2)
-        # FIXME: this might need revisit
-        unfolded = unfolded.reshape(-1, self.kernel_size_2d)
-        self.inputs.append(unfolded.numpy())
+        # module_in has shape (B, C, H, W) 
+        # Need to consider both batch_size B and in_channels C
+        unfolded = self.unfolder(module_in[0])  # shape (B, C*kernel_size[0]*kernel_size[1], L)
+        unfolded = torch.transpose(unfolded, 1, 2) # shape (B, L, C*kernel_size[0]*kernel_size[1])
+        unfolded = unfolded.reshape(-1, unfolded.size(-1)) # shape (B*L, C*kernel_size[0]*kernel_size[1])
+        self.inputs.append(unfolded.numpy())  
         raise InterruptException
     
+    # the following function is unnecessary now 
+    # def _unfold_conv2d_input(self, module_in):
+    #     '''
+    #     Convert conv2d input layer to sliding window.
 
-    def _unfold_conv2d_input(self, module_in):
-        '''
-        Convert conv2d input layer to sliding window.
-
-        Parameters
-        -----------
-        module_in : torch.tensor
-            The input feature map to the conv2d layer of the analog network
+    #     Parameters
+    #     -----------
+    #     module_in : torch.tensor
+    #         The input feature map to the conv2d layer of the analog network
         
-        Returns
-        -------
-        torch.tensor
-            A tensor of sliding input results. A long the column, it conatins
-            the windows of each sample in the batch stacked together.
-        '''
-        pass
-
-
+    #     Returns
+    #     -------
+    #     torch.tensor
+    #         A tensor of sliding input results. A long the column, it conatins
+    #         the windows of each sample in the batch stacked together.
+    #     '''
+    #     pass
