@@ -76,17 +76,12 @@ class QuantizeNeuralNet():
         # self.quantized_network.load_state_dict(self.analog_network.state_dict())
         # print(type(self.quantized_network))
 
-        # self.analog_network_layers = list(self.analog_network.children())
-        # self.quantized_network_layers = list(self.quantized_network.children())
-
         self.analog_network_layers = [] 
         self._extract_layers(self.analog_network, self.analog_network_layers)
         self.quantized_network_layers = []
         self._extract_layers(self.quantized_network, self.quantized_network_layers)
 
-        print(self.analog_network_layers)
-
-
+    
     def _extract_layers(self, network, layer_list):
         """
         Recursively obtain layers of given network
@@ -116,6 +111,8 @@ class QuantizeNeuralNet():
                 if type(layer) == LINEAR_MODULE_TYPE or type(layer) == CONV2D_MODULE_TYPE
                     and i not in self.ignore_layers
                 ]
+        
+        print(f'Layer idx to quantize {layers_to_quantize}')
 
         for layer_idx in layers_to_quantize:
             analog_layer_input, quantized_layer_input \

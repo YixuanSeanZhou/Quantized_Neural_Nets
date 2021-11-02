@@ -3,6 +3,7 @@ from __future__ import annotations
 import numpy as np
 import multiprocessing as mp
 
+from tqdm import tqdm
 
 class StepAlgorithm:
     
@@ -160,7 +161,7 @@ class StepAlgorithm:
                                           layer_alphabet)) 
                                     for i, w in enumerate(W)]
         # join
-        for i in range(Q.shape[0]):
+        for i in tqdm(range(Q.shape[0])):
             idx, q = results[i].get()
             Q[idx, :] = q
 

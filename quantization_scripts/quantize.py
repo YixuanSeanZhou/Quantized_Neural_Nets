@@ -12,6 +12,8 @@ from quantize_neural_net import QuantizeNeuralNet
 from train_mlp import test_mlp, MLP
 from data_loaders import load_data_mnist, load_data_fashion_mnist, load_data_kmnist
 
+from networks import LeNet5
+
 from train_conv2d import CNN
 
 def augment(x):
@@ -32,21 +34,27 @@ if __name__ == '__main__':
     #                                              num_workers=num_workers)
 
     # model = torch.load('../models/conv2d_kmlp.pt', map_location=torch.device('cpu'))
-    alexnet = models.alexnet()
+    # alexnet = models.alexnet()
 
-    AlexTransform = [
-                    transforms.Resize((63, 63)),
-                    transforms.ToTensor(),
-                    augment
-                    ]
+    # AlexTransform = [
+    #                 transforms.Resize((63, 63)),
+    #                 transforms.ToTensor(),
+    #                 augment
+    #                 ]
 
-    model = torch.load('../models/alex_fashion_mnist.pt', map_location=torch.device('cpu'))
-    train_loader, _, test_loader = load_data_fashion_mnist(batch_size, transform=AlexTransform, train_ratio=1, 
+    # model = torch.load('../models/alex_fashion_mnist.pt', map_location=torch.device('cpu'))
+    # train_loader, _, test_loader = load_data_fashion_mnist(batch_size, transform=AlexTransform, train_ratio=1, 
+    #                                                         num_workers=num_workers)
+
+    LNetTransform = [transforms.Resize((32, 32)), transforms.ToTensor()]
+    model = torch.load('../models/lnet_mnist.pt', map_location=torch.device('cpu'))
+    train_loader, _, test_loader = load_data_mnist(batch_size, transform=LNetTransform, train_ratio=1, 
                                                             num_workers=num_workers)
+
     
     # quantize the neural net
-    quantizer = QuantizeNeuralNet(model, batch_size, train_loader, bits=4)
-    quantized_mlp = quantizer.quantize_network()
-    predictions, labels = test_mlp(test_loader, quantized_mlp)
+    quantizer = QuantizeNeuralNet(model, batch_size, train_loader, bits=2)
+    quantized_model = quantizer.quantize_network()
+    predictions, labels = test_mlp(test_loader, quantized_model)
     test_accuracy = np.sum(predictions == labels) / len(labels)
     print(f'The testing accuracy is: {test_accuracy}.')
