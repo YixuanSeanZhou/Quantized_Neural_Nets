@@ -9,38 +9,45 @@ import matplotlib.pyplot as plt
 
 from data_loaders import load_data_mnist, load_data_fashion_mnist, load_data_kmnist
 
+torch.multiprocessing.set_sharing_strategy('file_system')  # used for training on Linux based system
+
 device = "cuda" if torch.cuda.is_available() else "cpu"
 
 class CNN(nn.Module):
-    '''
-    Basic CNN to test quantization.
-    '''
-    def __init__(self):
+    """
+        Define and allocate layers for LeNet.
+        Args:
+            num_classes (int): number of classes to predict with this model
+        """
+    def __init__(self, num_classes):
         super().__init__()
 
-        # Define layers of MLP. Using nn.Sequential is also OK.
-        self.conv1 = nn.Conv2d(1, 6, 5)
-        self.conv2 = nn.Conv2d(6, 16, 5)
-        # an affine operation: y = Wx + b
-        self.fc1 = nn.Linear(256, 120)  # 5*5 from image dimension
-        self.fc2 = nn.Linear(120, 84)
-        self.fc3 = nn.Linear(84, 10)
+        self.feature_extractor = nn.Sequential(            
+            nn.Conv2d(1, 6, kernel_size=5),  # (b, 6, 24, 24)
+            nn.ReLU(),
+            nn.MaxPool2d(kernel_size=2),   # (b, 6, 12, 12)
+            nn.Conv2d(6, 16, kernel_size=5),  # (b, 16, 8, 8)
+            nn.ReLU(),
+            nn.MaxPool2d(kernel_size=2),   # (b, 16, 4, 4)   
+        )
 
+        self.classifier = nn.Sequential(
+            nn.Linear(16 * 4 * 4, 128),   # (b, 128)   
+            nn.ReLU(),
+            nn.Linear(128, 64),   # (b, 64)   
+            nn.ReLU(),
+            nn.Linear(64, num_classes),  # (b, 10)   
+        )
+    
     def forward(self, x):
-        # X = X.view(-1, self.input_dim)
-        # Max pooling over a (2, 2) window
-        x = F.max_pool2d(F.relu(self.conv1(x)), (2, 2))
-        # If the size is a square, you can specify with a single number
-        x = F.max_pool2d(F.relu(self.conv2(x)), 2)
-        x = torch.flatten(x, 1) # flatten all dimensions except the batch dimension
-        x = F.relu(self.fc1(x))
-        x = F.relu(self.fc2(x))
-        x = self.fc3(x)
-        return F.log_softmax(x, dim=1)
+        x = self.feature_extractor(x)
+        x = torch.flatten(x, 1)
+        logits = self.classifier(x)
+        probs = F.log_softmax(logits, dim=1)
+        return probs
 
 
-
-def train_mlp(train_loader, val_loader, model, loss_fn, optimizer, n_epochs):
+def train(train_loader, val_loader, model, loss_fn, optimizer, n_epochs):
     """
     Add annotations as docstrings. Will do this later.
     """
@@ -78,7 +85,7 @@ def train_mlp(train_loader, val_loader, model, loss_fn, optimizer, n_epochs):
     return train_losses, val_losses
 
 
-def test_mlp(test_loader, model):
+def test(test_loader, model):
     """
     Add annotations later.
     """
@@ -99,21 +106,21 @@ def test_mlp(test_loader, model):
 if __name__ == '__main__':
     print(f'{device} is available.')
     batch_size = 16
-    input_dim = 28 * 28
-    hidden_dim = [512, 256, 128]
-    out_dim = 10
-    n_epochs = 5
-    learning_rate = 5 * 1e-4
+    # input_dim = 28 * 28
+    # hidden_dim = [512, 256, 128]
+    num_classes = 10
+    n_epochs = 15
+    learning_rate = 1e-3
     weight_decay = 1e-6 
     num_workers = 4  # num_workers is around 4 * num_of_GPUs
-    train_loader, val_loader, test_loader = load_data_kmnist(batch_size, train_ratio=0.8, 
+    train_loader, val_loader, test_loader = load_data_mnist(batch_size, train_ratio=0.8, 
                                                 num_workers=num_workers)
-    model = CNN().to(device)
+    model = CNN(num_classes).to(device)
     loss_fn = nn.NLLLoss()
     optimizer = optim.Adam(model.parameters(), lr=learning_rate, weight_decay=weight_decay)
-    train_losses, val_losses = train_mlp(train_loader, val_loader, model, loss_fn, optimizer, n_epochs)
+    train_losses, val_losses = train(train_loader, val_loader, model, loss_fn, optimizer, n_epochs)
     # Calculate testing accuracy:
-    predictions, labels = test_mlp(test_loader, model)
+    predictions, labels = test(test_loader, model)
     test_accuracy = np.sum(predictions == labels) / len(labels)
     print(f'The testing accuracy is: {test_accuracy}.')
-    torch.save(model, '../models/conv2d_kmlp.pt')
+    torch.save(model, '../models/conv2d_mnist.pt')
