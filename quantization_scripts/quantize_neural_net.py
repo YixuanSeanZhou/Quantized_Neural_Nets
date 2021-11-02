@@ -75,8 +75,24 @@ class QuantizeNeuralNet():
         # self.quantized_network.load_state_dict(self.analog_network.state_dict())
         # print(type(self.quantized_network))
 
-        self.analog_network_layers = list(self.analog_network.children())
-        self.quantized_network_layers = list(self.quantized_network.children())
+        self.analog_network_layers = [] 
+        self._extract_layers(self.analog_network, self.analog_network_layers)
+        self.quantized_network_layers = []
+        self._extract_layers(self.quantized_network, self.quantized_network_layers)
+
+    
+    def _extract_layers(self, network, layer_list):
+        """
+        Recursively obtain layers of given network
+        """
+        for layer in network.children():
+            if type(layer) == nn.Sequential:
+                # if sequential layer, apply recursively to layers in sequential layer
+                self._extract_layers(layer, layer_list)
+            if not list(layer.children()):
+                # if leaf node, add it to list
+                layer_list.append(layer)
+
 
     def quantize_network(self):
         '''
