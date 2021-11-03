@@ -7,41 +7,14 @@ from torch.utils.data import DataLoader
 import numpy as np
 import matplotlib.pyplot as plt
 
-from data_loaders import load_data_mnist, load_data_fashion_mnist, load_data_kmnist
+from tqdm import tqdm
 
-torch.multiprocessing.set_sharing_strategy('file_system')  # used for training on Linux based system
+from data_loaders import load_data_mnist, load_data_fashion_mnist
+from models import MLP
 
 device = "cuda" if torch.cuda.is_available() else "cpu"
 
-class CNN(nn.Module):
-    '''
-    Basic CNN to test quantization.
-    '''
-    def __init__(self):
-        super().__init__()
-
-        # Define layers of MLP. Using nn.Sequential is also OK.
-        self.conv1 = nn.Conv2d(1, 6, 5)
-        self.conv2 = nn.Conv2d(6, 16, 5)
-        # an affine operation: y = Wx + b
-        self.fc1 = nn.Linear(256, 120)  # 5*5 from image dimension
-        self.fc2 = nn.Linear(120, 84)
-        self.fc3 = nn.Linear(84, 10)
-
-    def forward(self, x):
-        # X = X.view(-1, self.input_dim)
-        # Max pooling over a (2, 2) window
-        x = F.max_pool2d(F.relu(self.conv1(x)), (2, 2))
-        # If the size is a square, you can specify with a single number
-        x = F.max_pool2d(F.relu(self.conv2(x)), 2)
-        x = torch.flatten(x, 1) # flatten all dimensions except the batch dimension
-        x = F.relu(self.fc1(x))
-        x = F.relu(self.fc2(x))
-        x = self.fc3(x)
-        return F.log_softmax(x, dim=1)
-
-
-def train(train_loader, val_loader, model, loss_fn, optimizer, n_epochs):
+def train_model(train_loader, val_loader, model, loss_fn, optimizer, n_epochs):
     """
     Add annotations as docstrings. Will do this later.
     """
@@ -51,7 +24,7 @@ def train(train_loader, val_loader, model, loss_fn, optimizer, n_epochs):
     for epoch in range(1, n_epochs+1):
         model.train()
         batch_losses = []
-        for x_batch, y_batch in train_loader:
+        for x_batch, y_batch in tqdm(train_loader):
             output = model(x_batch.to(device))
             loss = loss_fn(output, y_batch.to(device))
             loss.backward()
@@ -79,7 +52,7 @@ def train(train_loader, val_loader, model, loss_fn, optimizer, n_epochs):
     return train_losses, val_losses
 
 
-def test(test_loader, model):
+def test_model(test_loader, model):
     """
     Add annotations later.
     """
@@ -100,21 +73,23 @@ def test(test_loader, model):
 if __name__ == '__main__':
     print(f'{device} is available.')
     batch_size = 16
-    # input_dim = 28 * 28
-    # hidden_dim = [512, 256, 128]
-    num_classes = 10
-    n_epochs = 15
-    learning_rate = 1e-3
+    input_dim = 28 * 28
+    hidden_dim = [512 * 4, 256, 128]
+    out_dim = 10
+    n_epochs = 5
+    learning_rate = 5 * 1e-4
     weight_decay = 1e-6 
     num_workers = 4  # num_workers is around 4 * num_of_GPUs
-    train_loader, val_loader, test_loader = load_data_mnist(batch_size, train_ratio=0.8, 
-                                                num_workers=num_workers)
-    model = CNN(num_classes).to(device)
+    dl = load_data_fashion_mnist
+
+    train_loader, val_loader, test_loader = dl(batch_size, train_ratio=0.8, 
+                                               num_workers=num_workers)
+    model = MLP(input_dim, hidden_dim, out_dim).to(device)
     loss_fn = nn.NLLLoss()
     optimizer = optim.Adam(model.parameters(), lr=learning_rate, weight_decay=weight_decay)
-    train_losses, val_losses = train(train_loader, val_loader, model, loss_fn, optimizer, n_epochs)
+    train_losses, val_losses = train_model(train_loader, val_loader, model, loss_fn, optimizer, n_epochs)
     # Calculate testing accuracy:
-    predictions, labels = test(test_loader, model)
+    predictions, labels = test_model(test_loader, model)
     test_accuracy = np.sum(predictions == labels) / len(labels)
     print(f'The testing accuracy is: {test_accuracy}.')
-    torch.save(model, '../models/conv2d_mnist.pt')
+    torch.save(model, '../models/fashion_mlp.pt')
