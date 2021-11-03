@@ -60,7 +60,7 @@ class QuantizeNeuralNet():
         self.alphabet_scalar = alphabet_scalar
         self.bits = bits
         self.alphabet = np.linspace(-1, 1, num=int(2 ** bits))
-        np.append(self.alphabet, 0)
+        self.alphabet.append(0)
         # self.alphabet = np.array([0, -1, 1])
         self.ignore_layers = ignore_layers
 
@@ -148,6 +148,7 @@ class QuantizeNeuralNet():
 
                 self.quantized_network_layers[layer_idx].weight.data = torch.Tensor(Q).float().view(W_shape)
             
+            print(f'Shape of weight matrix is {W.shape}')
             print(f'The quantization error of layer {layer_idx} is {quantize_error}.')
             print(f'The relative quantization error of layer {layer_idx} is {relative_quantize_error}.\n')
 

@@ -12,7 +12,7 @@ from data_loaders import load_data_mnist, load_data_fashion_mnist, load_data_kmn
 if __name__ == '__main__':
     batch_size = 32  # batch_size used for quantization
     num_workers = 4
-    bits = 3
+    bits = 1
     dl = load_data_fashion_mnist
     model_name = 'conv2d_fashion.pt'
     model_path = os.path.join('../models', model_name)
