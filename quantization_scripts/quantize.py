@@ -1,3 +1,4 @@
+from numpy.lib.npyio import load
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -21,8 +22,8 @@ def augment(x):
 if __name__ == '__main__':
     batch_size = 32  # batch_size used for quantization
     num_workers = 4
-    bits = 2
-    dl = load_data_kmnist
+    bits = 1
+    dl = load_data_fashion_mnist
     default_transform = [transforms.ToTensor()]
     LeNet_transform = [transforms.Resize((32, 32)), transforms.ToTensor()]
     AlexTransform = [
@@ -31,8 +32,8 @@ if __name__ == '__main__':
                     augment
                     ]
 
-    transform = default_transform
-    model_name = 'cnn_kmnist.pt'
+    transform = LeNet_transform
+    model_name = 'leNet_fashion_mnist.pt'
     model_path = os.path.join('../models', model_name)
 
     # load the model to be quantized
