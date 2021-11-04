@@ -142,8 +142,18 @@ def load_data_cifar100(batch_size, transform=[transforms.ToTensor()], train_rati
     return train_loader, val_loader, test_loader
 
 
+data_loader_dict = {
+    'fashion_mnist': load_data_fashion_mnist,
+    'mnist': load_data_mnist,
+    'kmnist': load_data_kmnist,
+    'cifar10': load_data_cifar10,
+    'cifar100': load_data_cifar100,
+}
+
+
 # MNIST
 # CIFAR10
+# Mini Image Net
 # IMAGE NET
 
 # AlexNet 

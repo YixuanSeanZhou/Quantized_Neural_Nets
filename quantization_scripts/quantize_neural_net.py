@@ -29,8 +29,8 @@ class QuantizeNeuralNet():
     data_loader: function
         The data_loader to load data
     '''
-    def __init__(self, network_to_quantize, batch_size, data_loader, bits,
-                 ignore_layers=[], alphabet_scalar=1):
+    def __init__(self, network_to_quantize, batch_size, data_loader, bits, 
+                 include_zero = False, ignore_layers=[], alphabet_scalar=1):
         '''
         Init the object that is used for quantizing the given neural net.
         Parameters
@@ -43,6 +43,8 @@ class QuantizeNeuralNet():
             The generator that loads the raw dataset
         bits : int
             Num of bits that alphabet is used.
+        include_zero: bool
+            Indicate whether to augment the alphabet with a 0.
         ignore_layers : List[int]
             List of layer index that shouldn't be quantized.
         alphabet_scaler: float,
@@ -61,8 +63,9 @@ class QuantizeNeuralNet():
         # FIXME: alphabet_scaler should probably not be used like this
         self.alphabet_scalar = alphabet_scalar
         self.bits = bits
-        self.alphabet = np.linspace(-1, 1, num=int(2 ** bits))
-        # self.alphabet = np.append(self.alphabet, 0)
+        self.alphabet = np.linspace(-1, 1, num=int(2 ** bits)) 
+        if include_zero:
+            self.alphabet = np.append(self.alphabet, 0)
         # self.alphabet = np.array([0, -1, 1, -0.5, 0.5])
         self.ignore_layers = ignore_layers
 
