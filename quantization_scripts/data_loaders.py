@@ -141,3 +141,12 @@ def load_data_cifar100(batch_size, transform=[transforms.ToTensor()], train_rati
                             num_workers=num_workers)             
     return train_loader, val_loader, test_loader
 
+
+# MNIST
+# CIFAR10
+# IMAGE NET
+
+# AlexNet 
+# VGG
+# ResNet
+# GoogleLeNet
