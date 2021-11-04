@@ -1,4 +1,4 @@
-Model,Dataset,Performance,Quantized Performance,Bits,,
+Model,Dataset,Performance,Quantized Performance,Bits,Seed,
 CNN,KMNIST,0.8402,0.8219,3,,
 CNN,KMNIST,0.8402,0.7999,2,,
 LeNet,MNIST,0.982,0.9802,3,,
