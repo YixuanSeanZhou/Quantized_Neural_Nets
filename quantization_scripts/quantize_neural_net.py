@@ -14,6 +14,8 @@ TEMP_QUANTIZED_TENSOR_FILE = 'temp_input_tensor_quantized_file.pt'
 LINEAR_MODULE_TYPE = nn.Linear
 CONV2D_MODULE_TYPE = nn.Conv2d
 
+SUPPORTED_LAYER_TYPE = {LINEAR_MODULE_TYPE, CONV2D_MODULE_TYPE}
+
 class QuantizeNeuralNet():
     '''
     Corresponding object to work with for quantizing the neural network.
@@ -60,8 +62,8 @@ class QuantizeNeuralNet():
         self.alphabet_scalar = alphabet_scalar
         self.bits = bits
         self.alphabet = np.linspace(-1, 1, num=int(2 ** bits))
-        self.alphabet.append(0)
-        # self.alphabet = np.array([0, -1, 1])
+        # self.alphabet = np.append(self.alphabet, 0)
+        # self.alphabet = np.array([0, -1, 1, -0.5, 0.5])
         self.ignore_layers = ignore_layers
 
         # create a copy which is our quantized network
@@ -71,6 +73,7 @@ class QuantizeNeuralNet():
         #     self.analog_network.outputdim
         #     )
         # self.quantized_network.load_state_dict(self.analog_network.state_dict())
+        
         self.quantized_network = copy.deepcopy(self.analog_network)
         # self.quantized_network.load_state_dict(self.analog_network.state_dict())
         # print(type(self.quantized_network))
@@ -93,7 +96,6 @@ class QuantizeNeuralNet():
                 # if leaf node, add it to list
                 layer_list.append(layer)
 
-
     def quantize_network(self):
         '''
         Perform the quantization of the neural network.
@@ -108,9 +110,11 @@ class QuantizeNeuralNet():
 
         layers_to_quantize = [
             i for i, layer in enumerate(self.quantized_network_layers) 
-                if type(layer) in [LINEAR_MODULE_TYPE, CONV2D_MODULE_TYPE]  # Fix a bug
+                if type(layer) in SUPPORTED_LAYER_TYPE
                     and i not in self.ignore_layers
                 ]
+        
+        print(f'Layer idx to quantize {layers_to_quantize}')
 
         for layer_idx in layers_to_quantize:
             analog_layer_input, quantized_layer_input \

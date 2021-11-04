@@ -141,7 +141,7 @@ class StepAlgorithm:
             The quantized layer.
         '''
         # Start quantize 
-        pool = mp.Pool(mp.cpu_count())
+        pool = mp.Pool(mp.cpu_count()-1)
 
         # FIXME: This defeats the purpose, partially
         # May move the layer_alphabet to quantize_neural_net.py
