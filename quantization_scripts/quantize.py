@@ -103,7 +103,8 @@ if __name__ == '__main__':
     with open(log_file_name, 'a') as f:
         csv_writer = csv.writer(f)
         row = [
-            model_name, data_set, original_test_accuracy, test_accuracy, bits,
+            model_name, data_set, batch_size, 
+            original_test_accuracy, test_accuracy, bits,
             include_0, seed, author
         ]
         csv_writer.writerow(row)
