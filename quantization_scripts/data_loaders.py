@@ -8,6 +8,8 @@ import multiprocessing as mp
 import json
 import pickle
 
+import gc
+
 def seed_worker(worker_id):
     worker_seed = torch.initial_seed() % 2**32
     np.random.seed(worker_seed)
@@ -83,6 +85,9 @@ def data_loader_miniimagenet(batch_size, transform, num_workers=get_dataloader_w
     train_ds = MiniImagenet(train_data, label_dict, transform)
     train_dl = DataLoader(train_ds, batch_size, shuffle=True, num_workers=num_workers,
                             worker_init_fn=seed_worker, generator=g)
+
+    del train_data
+    gc.collect()
 
     val_f = open("../data/miniimagenet/mini-imagenet-cache-val.pkl", "rb")
     val_data = pickle.load(val_f)
