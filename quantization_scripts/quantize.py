@@ -13,7 +13,7 @@ import torchvision.models as models
 from torchvision import transforms
 
 from quantize_neural_net import QuantizeNeuralNet
-from train_conv2d import test
+from model_trainer import test_model
 
 from data_loaders import data_loader, data_loader_miniimagenet
 
@@ -30,13 +30,13 @@ def augment(x):
 
 if __name__ == '__main__':
     
-    default_transform = [transforms.ToTensor()]
-    LeNet_transform = [transforms.Resize((32, 32)), transforms.ToTensor()]
-    AlexNet_transform = [
-                    transforms.Resize((63, 63)),
-                    transforms.ToTensor(),
-                    augment
-                    ]
+    default_transform = transforms.Compose([transforms.ToTensor()])
+    LeNet_transform = transforms.Compose([transforms.Resize((32, 32)), transforms.ToTensor()])
+    AlexNet_transform = transforms.Compose([
+                                            transforms.Resize((63, 63)),
+                                            transforms.ToTensor(),
+                                            augment
+                                            ])
 
     # pretrained_transform is used for all pretrained models and Normalize is mandatory
     min_img_size = 224  # The min size, as noted in the PyTorch pretrained models doc, is 224 px.
@@ -56,7 +56,7 @@ if __name__ == '__main__':
     bits = 1
     data_set = 'MNIST'
     model_name = 'LeNet' # choose models trained by ourselves 
-    original_test_accuracy = 0.982
+    original_test_accuracy = None # set to None to run test on the original model.
     transform = LeNet_transform
     include_0 = True
     # end of hyperparameter section
@@ -97,7 +97,14 @@ if __name__ == '__main__':
                                   train_loader, bits=bits,
                                   include_zero=include_0)
     quantized_model = quantizer.quantize_network()
-    predictions, labels = test(test_loader, quantized_model)
+    
+    if not original_test_accuracy:
+        print(f'\nEvaluting the original model to get its accuracy\n')
+        predictions, labels = test_model(test_loader, model)
+        original_test_accuracy = np.sum(predictions == labels) / len(labels)
+    
+    print(f'\nEvaluting the quantized model to get its accuracy\n')
+    predictions, labels = test_model(test_loader, quantized_model)
     test_accuracy = np.sum(predictions == labels) / len(labels)
     torch.save(quantized_model, f'../models/quantized_b{bits}_'+model_name)
     print(f'The testing accuracy is: {test_accuracy}.')

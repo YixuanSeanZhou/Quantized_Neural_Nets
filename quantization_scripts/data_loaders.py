@@ -22,6 +22,7 @@ def get_dataloader_workers():
 
 def data_loader(ds_name, batch_size, transform, train_ratio=0.8, num_workers=get_dataloader_workers()): 
     """Download ds_name and then load it into memory."""
+    
     if ds_name == 'MiniImagenet':
         return data_loader_miniimagenet(batch_size=batch_size, transform=transform)
 

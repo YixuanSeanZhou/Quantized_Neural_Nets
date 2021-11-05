@@ -2,6 +2,34 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+
+class MLP(nn.Module):
+    '''
+    Add new annotations later.
+    '''
+    def __init__(self, input_dim, hidden_dim, out_dim):
+        super().__init__()
+        self.input_dim = input_dim
+        self.hidden_dim = hidden_dim
+        self.out_dim = out_dim
+        # hidden_dim = [512, 256, 128]
+        # Define layers of MLP. Using nn.Sequential is also OK.
+        self.layer1 = nn.Linear(input_dim, hidden_dim[0], bias=True)
+        self.layer2 = nn.Linear(hidden_dim[0], hidden_dim[1], bias=True)
+        self.layer3 = nn.Linear(hidden_dim[1], hidden_dim[2], bias=True)
+        self.layer4 = nn.Linear(hidden_dim[2], out_dim, bias=True)
+
+    def forward(self, X):
+        X = X.view(-1, self.input_dim)
+        X = self.layer1(X)
+        X = F.relu(X)
+        X = self.layer2(X)
+        X = F.relu(X)
+        X = self.layer3(X)
+        X = F.relu(X)
+        X = self.layer4(X)
+        return F.log_softmax(X, dim=1)
+
 class LeNet5(nn.Module):
 
     def __init__(self, n_classes):

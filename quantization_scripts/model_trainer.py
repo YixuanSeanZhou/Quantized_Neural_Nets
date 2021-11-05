@@ -4,12 +4,13 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch import optim
 from torch.utils.data import DataLoader
+from torchvision import transforms
 import numpy as np
 import matplotlib.pyplot as plt
 
 from tqdm import tqdm
 
-from data_loaders import load_data_mnist, load_data_fashion_mnist
+from data_loaders import *
 from models import MLP
 
 device = "cuda" if torch.cuda.is_available() else "cpu"
@@ -61,7 +62,7 @@ def test_model(test_loader, model):
     model.eval()
 
     with torch.no_grad():
-        for x_test, y_test in test_loader:
+        for x_test, y_test in tqdm(test_loader):
             _, pred = model(x_test.to(device)).max(dim=1)
             predictions.append(pred.cpu().numpy())
             labels.append(y_test.numpy())
@@ -80,7 +81,7 @@ if __name__ == '__main__':
     learning_rate = 5 * 1e-4
     weight_decay = 1e-6 
     num_workers = 4  # num_workers is around 4 * num_of_GPUs
-    dl = load_data_fashion_mnist
+    dl = data_loader('FashionMNIST', batch_size, transforms.Compose([transforms.ToTensor()]))
 
     train_loader, val_loader, test_loader = dl(batch_size, train_ratio=0.8, 
                                                num_workers=num_workers)

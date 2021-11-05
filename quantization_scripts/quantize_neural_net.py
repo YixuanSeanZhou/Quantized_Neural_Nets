@@ -5,6 +5,8 @@ import torch.nn.functional as F
 import numpy as np
 import copy
 
+import gc
+
 from helper_tools import InterruptException
 from step_algorithm import StepAlgorithm
 
@@ -158,6 +160,10 @@ class QuantizeNeuralNet():
             print(f'Shape of weight matrix is {W.shape}')
             print(f'The quantization error of layer {layer_idx} is {quantize_error}.')
             print(f'The relative quantization error of layer {layer_idx} is {relative_quantize_error}.\n')
+
+            del analog_layer_input
+            del quantized_layer_input
+            gc.collect()
 
         return self.quantized_network
 
