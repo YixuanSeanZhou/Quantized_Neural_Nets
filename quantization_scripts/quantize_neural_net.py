@@ -122,8 +122,12 @@ class QuantizeNeuralNet():
         print(f'Layer idx to quantize {layers_to_quantize}')
 
         for layer_idx in layers_to_quantize:
+            gc.collect()
+
             analog_layer_input, quantized_layer_input \
                 = self._populate_linear_layer_input(layer_idx)
+
+            print(f'\nQuantizing layer: {layer_idx}')
 
             if type(self.analog_network_layers[layer_idx]) == LINEAR_MODULE_TYPE:
 
@@ -161,8 +165,7 @@ class QuantizeNeuralNet():
             print(f'The quantization error of layer {layer_idx} is {quantize_error}.')
             print(f'The relative quantization error of layer {layer_idx} is {relative_quantize_error}.\n')
 
-            del analog_layer_input
-            del quantized_layer_input
+            del analog_layer_input, quantized_layer_input
             gc.collect()
 
         return self.quantized_network
@@ -220,9 +223,12 @@ class QuantizeNeuralNet():
                 pass
 
             quantized_handle.remove()
+        
+        del raw_input_data
+        gc.collect()
+
         return (save_input.inputs[0], save_input.inputs[1])
 
-    
 
 class SaveInputMLP:
     """

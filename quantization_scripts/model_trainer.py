@@ -60,7 +60,7 @@ def test_model(test_loader, model):
     predictions = []
     labels = []
     model.eval()
-
+    device = 'cpu'
     with torch.no_grad():
         for x_test, y_test in tqdm(test_loader):
             _, pred = model(x_test.to(device)).max(dim=1)
@@ -68,6 +68,7 @@ def test_model(test_loader, model):
             labels.append(y_test.numpy())
     predictions = np.concatenate(predictions)
     labels = np.concatenate(labels)
+    device = "cuda" if torch.cuda.is_available() else "cpu"
     return predictions, labels
 
 
