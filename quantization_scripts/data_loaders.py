@@ -73,19 +73,22 @@ def data_loader_miniimagenet(batch_size, transform, num_workers=get_dataloader_w
             d = json.load(f) 
             label_dict = {v[0]: int(k) for k, v in d.items()}
 
-    train_data = open('../data/miniimagenet/mini-imagenet-cache-train.pkl', 'rb')
-    train_data = pickle.load(train_data)
+    train_f = open('../data/miniimagenet/mini-imagenet-cache-train.pkl', 'rb')
+    train_data = pickle.load(train_f)
+    train_f.close()
     train_ds = MiniImagenet(train_data, label_dict, transform)
     train_dl = DataLoader(train_ds, batch_size, shuffle=True, num_workers=num_workers,
                             worker_init_fn=seed_worker, generator=g)
 
-    val_data = open("../data/miniimagenet/mini-imagenet-cache-val.pkl", "rb")
-    val_data = pickle.load(val_data)
+    val_f = open("../data/miniimagenet/mini-imagenet-cache-val.pkl", "rb")
+    val_data = pickle.load(val_f)
+    val_f.close()
     val_ds = MiniImagenet(val_data, label_dict, transform)
     val_dl = DataLoader(val_ds, batch_size, shuffle=False, num_workers=num_workers)
 
-    test_data = open("../data/miniimagenet/mini-imagenet-cache-test.pkl", "rb")
-    test_data = pickle.load(test_data)
+    test_f = open("../data/miniimagenet/mini-imagenet-cache-test.pkl", "rb")
+    test_data = pickle.load(test_f)
+    test_f.close()
     test_ds = MiniImagenet(test_data, label_dict, transform)
     test_dl = DataLoader(test_ds, batch_size=1, shuffle=False, num_workers=num_workers)
 
