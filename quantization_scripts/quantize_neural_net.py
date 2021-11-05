@@ -5,6 +5,8 @@ import torch.nn.functional as F
 import numpy as np
 import copy
 
+import gc
+
 from helper_tools import InterruptException
 from step_algorithm import StepAlgorithm
 
@@ -29,8 +31,8 @@ class QuantizeNeuralNet():
     data_loader: function
         The data_loader to load data
     '''
-    def __init__(self, network_to_quantize, batch_size, data_loader, bits,
-                 ignore_layers=[], alphabet_scalar=1):
+    def __init__(self, network_to_quantize, batch_size, data_loader, bits, 
+                 include_zero = False, ignore_layers=[], alphabet_scalar=1):
         '''
         Init the object that is used for quantizing the given neural net.
         Parameters
@@ -43,6 +45,8 @@ class QuantizeNeuralNet():
             The generator that loads the raw dataset
         bits : int
             Num of bits that alphabet is used.
+        include_zero: bool
+            Indicate whether to augment the alphabet with a 0.
         ignore_layers : List[int]
             List of layer index that shouldn't be quantized.
         alphabet_scaler: float,
@@ -61,8 +65,9 @@ class QuantizeNeuralNet():
         # FIXME: alphabet_scaler should probably not be used like this
         self.alphabet_scalar = alphabet_scalar
         self.bits = bits
-        self.alphabet = np.linspace(-1, 1, num=int(2 ** bits))
-        self.alphabet = np.append(self.alphabet, 0)
+        self.alphabet = np.linspace(-1, 1, num=int(2 ** bits)) 
+        if include_zero:
+            self.alphabet = np.append(self.alphabet, 0)
         # self.alphabet = np.array([0, -1, 1, -0.5, 0.5])
         self.ignore_layers = ignore_layers
 
@@ -117,8 +122,12 @@ class QuantizeNeuralNet():
         print(f'Layer idx to quantize {layers_to_quantize}')
 
         for layer_idx in layers_to_quantize:
+            gc.collect()
+
             analog_layer_input, quantized_layer_input \
                 = self._populate_linear_layer_input(layer_idx)
+
+            print(f'\nQuantizing layer: {layer_idx}')
 
             if type(self.analog_network_layers[layer_idx]) == LINEAR_MODULE_TYPE:
 
@@ -155,6 +164,9 @@ class QuantizeNeuralNet():
             print(f'Shape of weight matrix is {W.shape}')
             print(f'The quantization error of layer {layer_idx} is {quantize_error}.')
             print(f'The relative quantization error of layer {layer_idx} is {relative_quantize_error}.\n')
+
+            del analog_layer_input, quantized_layer_input
+            gc.collect()
 
         return self.quantized_network
 
@@ -211,9 +223,12 @@ class QuantizeNeuralNet():
                 pass
 
             quantized_handle.remove()
+        
+        del raw_input_data
+        gc.collect()
+
         return (save_input.inputs[0], save_input.inputs[1])
 
-    
 
 class SaveInputMLP:
     """
