@@ -1,2 +1,1 @@
 Model Name,Dataset,Quantizationo Batch Size,Original Test Accuracy,Quantized Test Accuracy,Bits,Include 0,Seed,Author
-LeNet,mnist,32,0.982,0.9757,1,True,0,Yixuan Zhou

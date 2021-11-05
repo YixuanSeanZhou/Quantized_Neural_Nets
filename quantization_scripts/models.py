@@ -24,12 +24,11 @@ class LeNet5(nn.Module):
             nn.Linear(in_features=84, out_features=n_classes),
         )
 
-
     def forward(self, x):
         x = self.feature_extractor(x)
         x = torch.flatten(x, 1)
         logits = self.classifier(x)
-        probs = F.softmax(logits, dim=1)
+        probs = F.log_softmax(logits, dim=1)
         return probs
 
 

@@ -6,39 +6,13 @@ from torch import optim
 from torch.utils.data import DataLoader
 import numpy as np
 import matplotlib.pyplot as plt
-
-from data_loaders import load_data_mnist, load_data_fashion_mnist, load_data_kmnist
+from torchvision import transforms
+from data_loaders import data_loader
+from models import CNN, LeNet5
 
 torch.multiprocessing.set_sharing_strategy('file_system')  # used for training on Linux based system
 
 device = "cuda" if torch.cuda.is_available() else "cpu"
-
-class CNN(nn.Module):
-    '''
-    Basic CNN to test quantization.
-    '''
-    def __init__(self):
-        super().__init__()
-
-        # Define layers of MLP. Using nn.Sequential is also OK.
-        self.conv1 = nn.Conv2d(1, 6, 5)
-        self.conv2 = nn.Conv2d(6, 16, 5)
-        # an affine operation: y = Wx + b
-        self.fc1 = nn.Linear(256, 120)  # 5*5 from image dimension
-        self.fc2 = nn.Linear(120, 84)
-        self.fc3 = nn.Linear(84, 10)
-
-    def forward(self, x):
-        # X = X.view(-1, self.input_dim)
-        # Max pooling over a (2, 2) window
-        x = F.max_pool2d(F.relu(self.conv1(x)), (2, 2))
-        # If the size is a square, you can specify with a single number
-        x = F.max_pool2d(F.relu(self.conv2(x)), 2)
-        x = torch.flatten(x, 1) # flatten all dimensions except the batch dimension
-        x = F.relu(self.fc1(x))
-        x = F.relu(self.fc2(x))
-        x = self.fc3(x)
-        return F.log_softmax(x, dim=1)
 
 
 def train(train_loader, val_loader, model, loss_fn, optimizer, n_epochs):
@@ -104,17 +78,20 @@ if __name__ == '__main__':
     # hidden_dim = [512, 256, 128]
     num_classes = 10
     n_epochs = 15
-    learning_rate = 1e-3
+    learning_rate = 1e-3 
     weight_decay = 1e-6 
     num_workers = 4  # num_workers is around 4 * num_of_GPUs
-    train_loader, val_loader, test_loader = load_data_mnist(batch_size, train_ratio=0.8, 
-                                                num_workers=num_workers)
-    model = CNN(num_classes).to(device)
-    loss_fn = nn.NLLLoss()
+    ds_name = 'FashionMNIST' 
+    LeNet_transform = transforms.Compose([transforms.Resize((32, 32)), 
+                                    transforms.ToTensor()])
+    train_loader, val_loader, test_loader = data_loader(ds_name, batch_size, LeNet_transform,
+                                                train_ratio=0.8, num_workers=num_workers)
+    model = LeNet5(num_classes).to(device) 
+    loss_fn = nn.NLLLoss() 
     optimizer = optim.Adam(model.parameters(), lr=learning_rate, weight_decay=weight_decay)
     train_losses, val_losses = train(train_loader, val_loader, model, loss_fn, optimizer, n_epochs)
     # Calculate testing accuracy:
-    predictions, labels = test(test_loader, model)
+    predictions, labels = test(test_loader, model) 
     test_accuracy = np.sum(predictions == labels) / len(labels)
     print(f'The testing accuracy is: {test_accuracy}.')
-    torch.save(model, '../models/conv2d_mnist.pt')
+    torch.save(model, '../models/conv2d_fashion.pt') 
