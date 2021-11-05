@@ -38,10 +38,10 @@ if __name__ == '__main__':
                          ])
     # transform_pipeline is used for all pretrained models and Normalize is mandatory
 
-    transform = default_transform
+    transform = transform_pipeline
     model_name = 'vgg16'   # choose models trained by ourselves 
     model_path = os.path.join('../models', model_name) # only needed for our trained models
-    ds_name = 'MiniImagenet'    # name of dataset, use names in following link 
+    ds_name =  'MiniImagenet'    # name of dataset, use names in following link 
     # https://pytorch.org/vision/stable/datasets.html#fashion-mnist
 
     # load the model to be quantized
