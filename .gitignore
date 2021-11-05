@@ -137,3 +137,4 @@ quantization_scripts/test.ipynb
 .DS_Store
 *.DS_Store
 data/
+quantization_scripts/cache_data/*

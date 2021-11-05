@@ -165,7 +165,7 @@ class StepAlgorithm:
             idx, q = results[i].get()
             Q[idx, :] = q
 
-        # for i, w in enumerate(W):
+        # for i, w in tqdm(enumerate(W)):
         #     idx, q = StepAlgorithm._quantize_neuron(w, i, 
         #                                         analog_layer_input, 
         #                                         quantized_layer_input,
