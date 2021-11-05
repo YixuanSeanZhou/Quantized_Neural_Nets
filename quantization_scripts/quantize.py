@@ -2,17 +2,14 @@ from numpy.lib.npyio import load
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-
+from torchvision import transforms
+import torchvision
 import numpy as np
 import os
 
-
-import torchvision.models as models
-from torchvision import transforms
-
 from quantize_neural_net import QuantizeNeuralNet
 from train_conv2d import test
-from data_loaders import load_data_mnist, load_data_fashion_mnist, load_data_kmnist
+from data_loaders import data_loader, data_loader_miniimagenet
 
 from models import LeNet5, CNN
 
@@ -23,51 +20,47 @@ if __name__ == '__main__':
     batch_size = 32  # batch_size used for quantization
     num_workers = 4
     bits = 1
-    dl = load_data_fashion_mnist
-    default_transform = [transforms.ToTensor()]
-    LeNet_transform = [transforms.Resize((32, 32)), transforms.ToTensor()]
-    AlexTransform = [
+    default_transform = transforms.ToTensor()
+    LeNet_transform = transforms.Compose([transforms.Resize((32, 32)), 
+                                    transforms.ToTensor()])
+    AlexTransform = transforms.Compose([
                     transforms.Resize((63, 63)),
                     transforms.ToTensor(),
                     augment
-                    ]
+                    ])
+    min_img_size = 224  # The min size, as noted in the PyTorch pretrained models doc, is 224 px.
+    # see https://pytorch.org/vision/stable/models.html
+    transform_pipeline = transforms.Compose([
+                         transforms.ToTensor(),
+                         transforms.Resize(min_img_size),   
+                         transforms.Normalize(mean=[0.485, 0.456, 0.406],
+                                            std=[0.229, 0.224, 0.225])
+                         ])
+    # transform_pipeline is used for all pretrained models and Normalize is mandatory
 
-    transform = LeNet_transform
-    model_name = 'leNet_fashion_mnist.pt'
-    model_path = os.path.join('../models', model_name)
+    transform = default_transform
+    model_name = 'vgg16'   # choose models trained by ourselves 
+    model_path = os.path.join('../models', model_name) # only needed for our trained models
+    ds_name = 'MiniImagenet'    # name of dataset, use names in following link 
+    # https://pytorch.org/vision/stable/datasets.html#fashion-mnist
 
     # load the model to be quantized
-    model = torch.load(model_path, map_location=torch.device('cpu'))
+    if model_name in ['vgg16', 'vgg16_bn']:  # add more models later
+        model = getattr(torchvision.models, model_name)(pretrained=True) 
+        model.eval()  # eval() is necessary 
+    else:
+        model = torch.load(model_path, map_location=torch.device('cpu'))
+        model.eval()
+        # choose dataset here
+    
+    if ds_name == 'MiniImagenet':
+        train_loader, _, test_loader = data_loader_miniimagenet(batch_size, transform, num_workers)
+    else:
     # load the data loader for training and testing
-    train_loader, _, test_loader = dl(batch_size, train_ratio=1, 
+        train_loader, _, test_loader = data_loader(ds_name, batch_size, train_ratio=1, 
                                       num_workers=num_workers, 
                                       transform=transform
-                                    )
-    
-    # model = torch.load('../models/fashion_mlp.pt', map_location=torch.device('cpu'))
-    # train_loader, _, test_loader = load_data_fashion_mnist(batch_size, train_ratio=1, 
-    #                                              num_workers=num_workers)
-
-    # model = torch.load('../models/conv2d_kmlp.pt', map_location=torch.device('cpu'))
-    # alexnet = models.alexnet()
-    # train_loader, _, test_loader = load_data_kmnist(batch_size, train_ratio=1, 
-    #                                                 num_workers=num_workers)
-
-    # AlexTransform = [
-    #                 transforms.Resize((63, 63)),
-    #                 transforms.ToTensor(),
-    #                 augment
-    #                 ]
-
-    # model = torch.load('../models/alex_fashion_mnist.pt', map_location=torch.device('cpu'))
-    # train_loader, _, test_loader = load_data_fashion_mnist(batch_size, transform=AlexTransform, train_ratio=1, 
-    #                                                         num_workers=num_workers)
-
-    
-    # model = torch.load('../models/lnet_mnist.pt', map_location=torch.device('cpu'))
-    # train_loader, _, test_loader = load_data_mnist(batch_size, transform=LNetTransform, train_ratio=1, 
-    #                                                         num_workers=num_workers)
-
+                                        )
     
     # quantize the neural net
     quantizer = QuantizeNeuralNet(model, batch_size, train_loader, bits=bits)
