@@ -51,17 +51,17 @@ if __name__ == '__main__':
     # hyperparameter section
     author = 'Yixuan Zhou'
     seed = 0
-    batch_size = 32  # batch_size used for quantization
+    batch_size = 16  # batch_size used for quantization
     num_workers = 4
     bits = 1
-    data_set = 'MNIST'
-    model_name = 'LeNet' # choose models trained by ourselves 
+    data_set = 'MiniImagenet'
+    model_name = 'vgg16' # choose models trained by ourselves 
     original_test_accuracy = None # set to None to run test on the original model.
     transform = LeNet_transform
     include_0 = True
     # end of hyperparameter section
 
-    transform = LeNet_transform
+    transform = pretrained_transform
     
     batch_size = 32  # batch_size used for quantization
     num_workers = 4

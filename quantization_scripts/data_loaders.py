@@ -35,7 +35,7 @@ def data_loader(ds_name, batch_size, transform, train_ratio=0.8, num_workers=get
                                                    transform=transform,
                                                    download=True)
     train_size = int(len(mnist_train) * train_ratio)
-    test_size =  len(mnist_train) - train_size
+    test_size = len(mnist_train) - train_size
     # Split dataset and the generator is used for reproducible results:    
     train_data, val_data = random_split(mnist_train, [train_size, test_size], generator=g)
                                  
