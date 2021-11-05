@@ -8,6 +8,7 @@ import multiprocessing as mp
 import json
 import pickle
 
+import os, glob, shutil
 import gc
 
 def seed_worker(worker_id):
@@ -51,10 +52,26 @@ def data_loader(ds_name, batch_size, transform, train_ratio=0.8, num_workers=get
 
 
 class MiniImagenet(Dataset):
-    def __init__(self, data, label_dict, transform=None):
-        self.X = data['image_data']
+    def __init__(self, data, label_dict, name, transform=None):
+        # we can maybe pput this into diff files.
+        self.dir_path = f'./cache_data/{name}'
+
+
+        if os.path.isdir(self.dir_path):
+            shutil.rmtree(self.dir_path)
+        
+        os.mkdir(self.dir_path)
+
+        X = data['image_data']
         self.Y = torch.Tensor(self.label_prep(data, label_dict)).long()
+
+        for i, x in enumerate(X):
+            np.save(f'{i}.npy', x)
+
         self.transform = transform
+
+        del X
+        gc.collect()
     
     def label_prep(self, data, label_dict):
         label_list = []
@@ -64,10 +81,10 @@ class MiniImagenet(Dataset):
         return label_list
 
     def __len__(self):
-        return len(self.X)
+        return len(self.Y)
     
     def __getitem__(self, idx):
-        x = self.X[idx]
+        x = np.load(f'self.dir_path/{idx}.npy')
         y = self.Y[idx]
         if self.transform:
             x = self.transform(x)
@@ -82,7 +99,7 @@ def data_loader_miniimagenet(batch_size, transform, num_workers=get_dataloader_w
     train_f = open('../data/miniimagenet/mini-imagenet-cache-train.pkl', 'rb')
     train_data = pickle.load(train_f)
     train_f.close()
-    train_ds = MiniImagenet(train_data, label_dict, transform)
+    train_ds = MiniImagenet(train_data, label_dict, 'train', transform)
     train_dl = DataLoader(train_ds, batch_size, shuffle=True, num_workers=num_workers,
                             worker_init_fn=seed_worker, generator=g)
 
@@ -92,13 +109,13 @@ def data_loader_miniimagenet(batch_size, transform, num_workers=get_dataloader_w
     val_f = open("../data/miniimagenet/mini-imagenet-cache-val.pkl", "rb")
     val_data = pickle.load(val_f)
     val_f.close()
-    val_ds = MiniImagenet(val_data, label_dict, transform)
+    val_ds = MiniImagenet(val_data, label_dict, 'validate', transform)
     val_dl = DataLoader(val_ds, batch_size, shuffle=False, num_workers=num_workers)
 
     test_f = open("../data/miniimagenet/mini-imagenet-cache-test.pkl", "rb")
     test_data = pickle.load(test_f)
     test_f.close()
-    test_ds = MiniImagenet(test_data, label_dict, transform)
+    test_ds = MiniImagenet(test_data, label_dict, 'test', transform)
     test_dl = DataLoader(test_ds, batch_size=1, shuffle=False, num_workers=num_workers)
 
     return train_dl, val_dl, test_dl
