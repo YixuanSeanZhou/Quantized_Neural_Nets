@@ -62,7 +62,7 @@ class QuantizeNeuralNet():
         self.alphabet_scalar = alphabet_scalar
         self.bits = bits
         self.alphabet = np.linspace(-1, 1, num=int(2 ** bits))
-        # self.alphabet = np.append(self.alphabet, 0)
+        self.alphabet = np.append(self.alphabet, 0)
         # self.alphabet = np.array([0, -1, 1, -0.5, 0.5])
         self.ignore_layers = ignore_layers
 
