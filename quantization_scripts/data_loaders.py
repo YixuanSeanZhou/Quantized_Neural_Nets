@@ -51,32 +51,37 @@ def data_loader(ds_name, batch_size, transform, train_ratio=0.8, num_workers=get
     return train_loader, val_loader, test_loader
 
 
+TRAIN = 'train'
+TEST = 'test'
+VAL = 'validate'
+
 class MiniImagenet(Dataset):
     def __init__(self, data, label_dict, name, hard_reload=False, transform=None):
         # we can maybe pput this into diff files.
-        self.dir_path = f'./cache_data/{name}'
         self.Y = torch.Tensor(self.label_prep(data, label_dict)).long()
-
-        print(self.dir_path)
-
         self.transform = transform
+        self.name = name
+        if self.name == TRAIN:
+            self.dir_path = f'./cache_data/{name}'
 
-        if os.path.isdir(self.dir_path):
-            if hard_reload:
-                shutil.rmtree(self.dir_path)
-                os.path.mkdir(self.dir_path)
-            else:
-                return
+            if os.path.isdir(self.dir_path):
+                if hard_reload:
+                    shutil.rmtree(self.dir_path)
+                    os.path.mkdir(self.dir_path)
+                else:
+                    return
 
-        X = data['image_data']
-        
-        os.mkdir(self.dir_path)
+            X = data['image_data']
+            
+            os.mkdir(self.dir_path)
 
-        for i, x in enumerate(X):
-            np.save(f'{self.dir_path}/{i}.npy', x)
+            for i, x in enumerate(X):
+                np.save(f'{self.dir_path}/{i}.npy', x)
 
-        del X
-        gc.collect()
+            del X
+            gc.collect()
+        else:
+            self.X = data['image_data']
     
     def label_prep(self, data, label_dict):
         label_list = []
@@ -89,7 +94,10 @@ class MiniImagenet(Dataset):
         return len(self.Y)
     
     def __getitem__(self, idx):
-        x = np.load(f'{self.dir_path}/{idx}.npy')
+        if self.name == TRAIN:
+            x = np.load(f'{self.dir_path}/{idx}.npy')
+        else:
+            x = self.X[idx]
         y = self.Y[idx]
         if self.transform:
             x = self.transform(x)
@@ -104,7 +112,7 @@ def data_loader_miniimagenet(batch_size, transform, num_workers=get_dataloader_w
     train_f = open('../data/miniimagenet/mini-imagenet-cache-train.pkl', 'rb')
     train_data = pickle.load(train_f)
     train_f.close()
-    train_ds = MiniImagenet(train_data, label_dict, 'train', transform=transform)
+    train_ds = MiniImagenet(train_data, label_dict, TRAIN, transform=transform)
     train_dl = DataLoader(train_ds, batch_size, shuffle=True, num_workers=num_workers,
                             worker_init_fn=seed_worker, generator=g)
 
@@ -114,7 +122,7 @@ def data_loader_miniimagenet(batch_size, transform, num_workers=get_dataloader_w
     val_f = open("../data/miniimagenet/mini-imagenet-cache-val.pkl", "rb")
     val_data = pickle.load(val_f)
     val_f.close()
-    val_ds = MiniImagenet(val_data, label_dict, 'validate', hard_reload=False, transform=transform)
+    val_ds = MiniImagenet(val_data, label_dict, VAL, hard_reload=False, transform=transform)
     val_dl = DataLoader(val_ds, batch_size, shuffle=False, num_workers=num_workers)
 
     del val_data
@@ -123,7 +131,7 @@ def data_loader_miniimagenet(batch_size, transform, num_workers=get_dataloader_w
     test_f = open("../data/miniimagenet/mini-imagenet-cache-test.pkl", "rb")
     test_data = pickle.load(test_f)
     test_f.close()
-    test_ds = MiniImagenet(test_data, label_dict, 'test', hard_reload=False, transform=transform)
+    test_ds = MiniImagenet(test_data, label_dict, TEST, hard_reload=False, transform=transform)
     test_dl = DataLoader(test_ds, batch_size=1, shuffle=False, num_workers=num_workers)
 
     del test_data
