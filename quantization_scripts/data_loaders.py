@@ -27,7 +27,8 @@ def data_loader(ds_name, batch_size, transform, train_ratio=0.8, num_workers=get
     """Download ds_name and then load it into memory."""
     
     if ds_name == 'MiniImagenet':
-        return data_loader_miniimagenet(batch_size=batch_size, transform=transform)
+        return data_loader_miniimagenet(batch_size=batch_size, transform=transform, 
+                                            num_workers=num_workers)
 
     mnist_train = getattr(torchvision.datasets, ds_name)("../data",
                                                     train=True,
@@ -104,7 +105,7 @@ def data_loader_miniimagenet(batch_size, transform, num_workers=get_dataloader_w
     train_f = open('../data/miniimagenet/mini-imagenet-cache-train.pkl', 'rb')
     train_data = pickle.load(train_f)
     train_f.close()
-    train_ds = MiniImagenet(train_data, label_dict, 'train', transform=transform)
+    train_ds = MiniImagenet(train_data, label_dict, 'train', hard_reload=False, transform=transform)
     train_dl = DataLoader(train_ds, batch_size, shuffle=True, num_workers=num_workers,
                             worker_init_fn=seed_worker, generator=g)
 
