@@ -280,20 +280,3 @@ class SaveInputConv2d:
         self.inputs.append(unfolded.numpy())  
         raise InterruptException
     
-    # the following function is unnecessary now 
-    # def _unfold_conv2d_input(self, module_in):
-    #     '''
-    #     Convert conv2d input layer to sliding window.
-
-    #     Parameters
-    #     -----------
-    #     module_in : torch.tensor
-    #         The input feature map to the conv2d layer of the analog network
-        
-    #     Returns
-    #     -------
-    #     torch.tensor
-    #         A tensor of sliding input results. A long the column, it conatins
-    #         the windows of each sample in the batch stacked together.
-    #     '''
-    #     pass
