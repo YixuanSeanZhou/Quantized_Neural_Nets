@@ -74,14 +74,3 @@ def data_loader(ds_name, batch_size, transform, num_workers):
         test_dl = DataLoader(test_ds, batch_size, shuffle=False,
                                 num_workers=num_workers)             
     return train_dl, test_dl 
-
-
-# MNIST
-# CIFAR10
-# Mini Image Net
-# IMAGE NET
-
-# AlexNet 
-# VGG
-# ResNet
-# GoogleLeNet
