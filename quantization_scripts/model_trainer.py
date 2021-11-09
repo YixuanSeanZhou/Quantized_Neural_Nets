@@ -62,7 +62,7 @@ def test_model(test_loader, model):
     model.eval()
     device = 'cpu'
     with torch.no_grad():
-        for x_test, y_test in tqdm(test_loader):
+        for x_test, y_test in test_loader:
             _, pred = model(x_test.to(device)).max(dim=1)
             predictions.append(pred.cpu().numpy())
             labels.append(y_test.numpy())
