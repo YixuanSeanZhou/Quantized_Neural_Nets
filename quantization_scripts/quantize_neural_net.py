@@ -1,6 +1,7 @@
 from __future__ import annotations
 import torch
 import torch.nn as nn
+import torchvision
 import torch.nn.functional as F
 import numpy as np
 import copy
@@ -82,7 +83,7 @@ class QuantizeNeuralNet():
         Recursively obtain layers of given network
         """
         for layer in network.children():
-            if type(layer) == nn.Sequential:
+            if type(layer) == nn.Sequential or torchvision.models.resnet.BasicBlock:
                 # if sequential layer, apply recursively to layers in sequential layer
                 self._extract_layers(layer, layer_list)
             if not list(layer.children()):
