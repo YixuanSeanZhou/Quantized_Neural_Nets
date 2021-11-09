@@ -36,18 +36,15 @@ if __name__ == '__main__':
     # hyperparameter section
     author = 'Jinjie'
     seed = 0
-    batch_size = 16  # batch_size used for quantization
-    num_workers = 4
-    bits = 1 
+    batch_size = 32  # batch_size used for quantization
+    num_workers = 8
+    bits = 3  # 1, 2, 3, 4
     data_set = 'ILSVRC2012'   # 'ILSVRC2012', 'CIFAR10', 'MNIST' 
     model_name = 'alexnet' # choose models 
-    original_test_accuracy = None # set to None to run test on the original model.
     transform = default_transform
-    include_0 = True
+    include_0 = False
     ignore_layers = []
-    alphabet_scalar = 0.5   # final alphabet is 
-    # np.linspace(-1, 1, num=int(2 ** bits)) * rad * alphabet_scalar
-    # end of hyperparameter section
+    alphabet_scalar = 2   # 2, 3, 4, 5
     
     # load the model to be quantized
     model = getattr(torchvision.models, model_name)(pretrained=True) 
@@ -72,11 +69,10 @@ if __name__ == '__main__':
     torch.save(quantized_model, os.path.join('../models/'+model_name, saved_model_name))
 
     topk = (1, 5)   # top-1 and top-5 accuracy
-    if not original_test_accuracy:
-        print(f'\n Evaluting the original model to get its accuracy\n')
-        topk_accuracy = test_accuracy(model, test_loader, topk)
-        print(f'Top-1 accuracy of {model_name} is {topk_accuracy[0]}.')
-        print(f'Top-5 accuracy of {model_name} is {topk_accuracy[1]}.')
+    print(f'\n Evaluting the original model to get its accuracy\n')
+    original_topk_accuracy = test_accuracy(model, test_loader, topk)
+    print(f'Top-1 accuracy of {model_name} is {original_topk_accuracy[0]}.')
+    print(f'Top-5 accuracy of {model_name} is {original_topk_accuracy[1]}.')
     
     print(f'\n Evaluting the quantized model to get its accuracy\n')
     topk_accuracy = test_accuracy(quantized_model, test_loader, topk)
@@ -87,7 +83,7 @@ if __name__ == '__main__':
         csv_writer = csv.writer(f)
         row = [
             model_name, data_set, batch_size, 
-            original_test_accuracy, topk_accuracy[0], topk_accuracy[1], 
+            original_topk_accuracy[0], topk_accuracy[0], original_topk_accuracy[1], topk_accuracy[1], 
             bits, alphabet_scalar, include_0, seed, author
         ]
         csv_writer.writerow(row)

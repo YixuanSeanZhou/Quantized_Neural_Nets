@@ -152,7 +152,7 @@ class StepAlgorithm:
         # May move the layer_alphabet to quantize_neural_net.py
         # rad = np.median(np.abs(W))  # radius
         
-        rad = np.abs(W).max()
+        rad = np.median(np.abs(W))
         layer_alphabet = alphabet * rad 
 
         Q = np.zeros_like(W)
