@@ -36,6 +36,9 @@ def parse_imagenet_val_labels(data_dir):
 
 
 def test_accuracy(model, test_dl, topk=(1, )):
+    """ 
+    Compute top k accuracy on testing dataset
+    """
     model.eval()
     maxk = max(topk)
     topk_count = np.zeros((len(topk), len(test_dl)))
