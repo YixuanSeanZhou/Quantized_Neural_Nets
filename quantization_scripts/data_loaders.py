@@ -8,7 +8,8 @@ import random
 import os
 import glob
 import re
-
+import pickle
+from helper_tools import parse_imagenet_val_labels
 
 def seed_worker(worker_id):
     worker_seed = torch.initial_seed() % 2**32
@@ -26,8 +27,7 @@ class Imagenet(Dataset):
     """
     def __init__(self, data_dir, transform):
         # we can maybe pput this into diff files.
-        label_path= os.path.join(data_dir, 'ILSVRC2012_validation_ground_truth.txt')
-        self.Y = torch.from_numpy(np.loadtxt(label_path)).long() 
+        self.Y = torch.from_numpy(parse_imagenet_val_labels(data_dir)).long()
         self.X_path = sorted(glob.glob(os.path.join(data_dir, 'ILSVRC2012_img_val/*.JPEG')), 
             key=lambda x: re.search('%s(.*)%s' % ('ILSVRC2012_img_val/', '.JPEG'), x).group(1))
         self.transform = transform
@@ -36,7 +36,7 @@ class Imagenet(Dataset):
         return len(self.X_path)
     
     def __getitem__(self, idx):
-        img = Image.open(self.X_path[idx])
+        img = Image.open(self.X_path[idx]).convert('RGB')
         y = self.Y[idx] 
         if self.transform:
             x = self.transform(img)
@@ -49,10 +49,17 @@ def data_loader(ds_name, batch_size, transform, num_workers):
     """
     if ds_name == 'ILSVRC2012':
         data_dir = '../data/ILSVRC2012'
+
         if not os.path.isdir(data_dir):
             raise Exception('Please download Imagenet2012 dataset!')
+        
         train_ds = torchvision.datasets.ImageFolder(os.path.join(data_dir, 'ILSVRC2012_img_train'),
                                                     transform=transform)
+        
+        if not os.path.isfile('../data/ILSVRC2012/wnid_to_label.pickle'):
+            with open('../data/ILSVRC2012/wnid_to_label.pickle', 'wb') as f:
+                pickle.dump(train_ds.class_to_idx, f)         
+
         test_ds = Imagenet(data_dir, transform) 
         train_dl = DataLoader(train_ds, batch_size, shuffle=True, num_workers=num_workers,
                                 worker_init_fn=seed_worker, generator=g)
