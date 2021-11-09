@@ -10,8 +10,8 @@ import gc
 from helper_tools import InterruptException
 from step_algorithm import StepAlgorithm
 
-TEMP_ANALOG_TENSOR_FILE = 'temp_input_tensor_analog_file.pt'
-TEMP_QUANTIZED_TENSOR_FILE = 'temp_input_tensor_quantized_file.pt'
+# TEMP_ANALOG_TENSOR_FILE = 'temp_input_tensor_analog_file.pt'
+# TEMP_QUANTIZED_TENSOR_FILE = 'temp_input_tensor_quantized_file.pt'
 
 LINEAR_MODULE_TYPE = nn.Linear
 CONV2D_MODULE_TYPE = nn.Conv2d
@@ -62,27 +62,15 @@ class QuantizeNeuralNet():
         self.batch_size = batch_size
         self.data_loader_iter = iter(data_loader)
 
-        # FIXME: alphabet_scaler should probably not be used like this
         self.alphabet_scalar = alphabet_scalar
         self.bits = bits
         self.alphabet = np.linspace(-1, 1, num=int(2 ** bits)) 
         if include_zero:
             self.alphabet = np.append(self.alphabet, 0)
-        # self.alphabet = np.array([0, -1, 1, -0.5, 0.5])
-        self.ignore_layers = ignore_layers
 
-        # create a copy which is our quantized network
-        # self.quantized_network = type(self.analog_network)(
-        #     self.analog_network.input_dim, 
-        #     self.analog_network.hidden_dim, 
-        #     self.analog_network.outputdim
-        #     )
-        # self.quantized_network.load_state_dict(self.analog_network.state_dict())
+        self.ignore_layers = ignore_layers
         
         self.quantized_network = copy.deepcopy(self.analog_network)
-        # self.quantized_network.load_state_dict(self.analog_network.state_dict())
-        # print(type(self.quantized_network))
-
         self.analog_network_layers = [] 
         self._extract_layers(self.analog_network, self.analog_network_layers)
         self.quantized_network_layers = []
@@ -162,6 +150,7 @@ class QuantizeNeuralNet():
                 self.quantized_network_layers[layer_idx].weight.data = torch.Tensor(Q).float().view(W_shape)
             
             print(f'Shape of weight matrix is {W.shape}')
+            print(f'Shape of X is {analog_layer_input.shape}')
             print(f'The quantization error of layer {layer_idx} is {quantize_error}.')
             print(f'The relative quantization error of layer {layer_idx} is {relative_quantize_error}.\n')
 
@@ -280,20 +269,3 @@ class SaveInputConv2d:
         self.inputs.append(unfolded.numpy())  
         raise InterruptException
     
-    # the following function is unnecessary now 
-    # def _unfold_conv2d_input(self, module_in):
-    #     '''
-    #     Convert conv2d input layer to sliding window.
-
-    #     Parameters
-    #     -----------
-    #     module_in : torch.tensor
-    #         The input feature map to the conv2d layer of the analog network
-        
-    #     Returns
-    #     -------
-    #     torch.tensor
-    #         A tensor of sliding input results. A long the column, it conatins
-    #         the windows of each sample in the batch stacked together.
-    #     '''
-    #     pass

@@ -1,15 +1,15 @@
 import torch
 import torchvision
-from torch.utils.data import Dataset, DataLoader, random_split
+from torch.utils.data import Dataset, DataLoader
 from torchvision import transforms
 import numpy as np
+from PIL import Image
 import random
-import multiprocessing as mp
-import json
+import os
+import glob
+import re
 import pickle
-
-import os, glob, shutil
-import gc
+from helper_tools import parse_imagenet_val_labels
 
 def seed_worker(worker_id):
     worker_seed = torch.initial_seed() % 2**32
@@ -20,133 +20,64 @@ g = torch.Generator()
 g.manual_seed(0)
 # use above function and g to preserve reproducibility.
 
-def get_dataloader_workers():
-    return mp.cpu_count() - 1
 
-def data_loader(ds_name, batch_size, transform, train_ratio=0.8, num_workers=get_dataloader_workers()): 
-    """Download ds_name and then load it into memory."""
-    
-    if ds_name == 'MiniImagenet':
-        return data_loader_miniimagenet(batch_size=batch_size, transform=transform)
-
-    mnist_train = getattr(torchvision.datasets, ds_name)("../data",
-                                                    train=True,
-                                                    transform=transform,
-                                                    download=True)
-    mnist_test = getattr(torchvision.datasets, ds_name)("../data",
-                                                   train=False,
-                                                   transform=transform,
-                                                   download=True)
-    train_size = int(len(mnist_train) * train_ratio)
-    test_size = len(mnist_train) - train_size
-    # Split dataset and the generator is used for reproducible results:    
-    train_data, val_data = random_split(mnist_train, [train_size, test_size], generator=g)
-                                 
-    train_loader = DataLoader(train_data, batch_size, shuffle=True, num_workers=num_workers,
-                            worker_init_fn=seed_worker, generator=g)
-    val_loader =  DataLoader(val_data, batch_size, shuffle=False,
-                        num_workers=num_workers)
-    test_loader = DataLoader(mnist_test, batch_size=1, shuffle=False,
-                            num_workers=num_workers)             
-    return train_loader, val_loader, test_loader
-
-
-TRAIN = 'train'
-TEST = 'test'
-VAL = 'validate'
-
-class MiniImagenet(Dataset):
-    def __init__(self, data, label_dict, name, hard_reload=False, transform=None):
+class Imagenet(Dataset):
+    """
+    Validation dataset of Imagenet
+    """
+    def __init__(self, data_dir, transform):
         # we can maybe pput this into diff files.
-        self.Y = torch.Tensor(self.label_prep(data, label_dict)).long()
+        self.Y = torch.from_numpy(parse_imagenet_val_labels(data_dir)).long()
+        self.X_path = sorted(glob.glob(os.path.join(data_dir, 'ILSVRC2012_img_val/*.JPEG')), 
+            key=lambda x: re.search('%s(.*)%s' % ('ILSVRC2012_img_val/', '.JPEG'), x).group(1))
         self.transform = transform
-        self.name = name
-        if self.name == TRAIN:
-            self.dir_path = f'./cache_data/{name}'
-
-            if os.path.isdir(self.dir_path):
-                if hard_reload:
-                    shutil.rmtree(self.dir_path)
-                    os.path.mkdir(self.dir_path)
-                else:
-                    return
-
-            X = data['image_data']
-            
-            os.mkdir(self.dir_path)
-
-            for i, x in enumerate(X):
-                np.save(f'{self.dir_path}/{i}.npy', x)
-
-            del X
-            gc.collect()
-        else:
-            self.X = data['image_data']
-    
-    def label_prep(self, data, label_dict):
-        label_list = []
-        for i in range(len(data['image_data'])):
-            label_str = next(k for k, v in data['class_dict'].items() if i in v)
-            label_list.append(label_dict[label_str])
-        return label_list
 
     def __len__(self):
-        return len(self.Y)
+        return len(self.X_path)
     
     def __getitem__(self, idx):
-        if self.name == TRAIN:
-            x = np.load(f'{self.dir_path}/{idx}.npy')
-        else:
-            x = self.X[idx]
-        y = self.Y[idx]
+        img = Image.open(self.X_path[idx]).convert('RGB')
+        y = self.Y[idx] 
         if self.transform:
-            x = self.transform(x)
+            x = self.transform(img)
         return x, y
 
 
-def data_loader_miniimagenet(batch_size, transform, num_workers=get_dataloader_workers()):
-    with open('../data/miniimagenet/imagenet_class_index.json') as f:
-            d = json.load(f) 
-            label_dict = {v[0]: int(k) for k, v in d.items()}
+def data_loader(ds_name, batch_size, transform, num_workers): 
+    """
+    Prepare data loaders
+    """
+    if ds_name == 'ILSVRC2012':
+        data_dir = '../data/ILSVRC2012'
 
-    train_f = open('../data/miniimagenet/mini-imagenet-cache-train.pkl', 'rb')
-    train_data = pickle.load(train_f)
-    train_f.close()
-    train_ds = MiniImagenet(train_data, label_dict, TRAIN, transform=transform)
-    train_dl = DataLoader(train_ds, batch_size, shuffle=True, num_workers=num_workers,
-                            worker_init_fn=seed_worker, generator=g)
+        if not os.path.isdir(data_dir):
+            raise Exception('Please download Imagenet2012 dataset!')
+        
+        train_ds = torchvision.datasets.ImageFolder(os.path.join(data_dir, 'ILSVRC2012_img_train'),
+                                                    transform=transform)
+        
+        if not os.path.isfile('../data/ILSVRC2012/wnid_to_label.pickle'):
+            with open('../data/ILSVRC2012/wnid_to_label.pickle', 'wb') as f:
+                pickle.dump(train_ds.class_to_idx, f)         
 
-    del train_data
-    gc.collect()
+        test_ds = Imagenet(data_dir, transform) 
+        train_dl = DataLoader(train_ds, batch_size, shuffle=True, num_workers=num_workers,
+                                worker_init_fn=seed_worker, generator=g)
+        test_dl = DataLoader(test_ds, batch_size, shuffle=False,
+                                num_workers=num_workers) 
 
-    val_f = open("../data/miniimagenet/mini-imagenet-cache-val.pkl", "rb")
-    val_data = pickle.load(val_f)
-    val_f.close()
-    val_ds = MiniImagenet(val_data, label_dict, VAL, hard_reload=False, transform=transform)
-    val_dl = DataLoader(val_ds, batch_size, shuffle=False, num_workers=num_workers)
-
-    del val_data
-    gc.collect()
-
-    test_f = open("../data/miniimagenet/mini-imagenet-cache-test.pkl", "rb")
-    test_data = pickle.load(test_f)
-    test_f.close()
-    test_ds = MiniImagenet(test_data, label_dict, TEST, hard_reload=False, transform=transform)
-    test_dl = DataLoader(test_ds, batch_size=1, shuffle=False, num_workers=num_workers)
-
-    del test_data
-    gc.collect()
-
-    return train_dl, val_dl, test_dl
-    
-
-
-# MNIST
-# CIFAR10
-# Mini Image Net
-# IMAGE NET
-
-# AlexNet 
-# VGG
-# ResNet
-# GoogleLeNet
+    else:
+        train_ds = getattr(torchvision.datasets, ds_name)("../data",
+                                                        train=True,
+                                                        transform=transform,
+                                                        download=True)
+        test_ds = getattr(torchvision.datasets, ds_name)("../data",
+                                                    train=False,
+                                                    transform=transform,
+                                                    download=True)
+                                    
+        train_dl = DataLoader(train_ds, batch_size, shuffle=True, num_workers=num_workers,
+                                worker_init_fn=seed_worker, generator=g)
+        test_dl = DataLoader(test_ds, batch_size, shuffle=False,
+                                num_workers=num_workers)             
+    return train_dl, test_dl 

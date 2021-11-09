@@ -151,13 +151,9 @@ class StepAlgorithm:
         # FIXME: This defeats the purpose, partially
         # May move the layer_alphabet to quantize_neural_net.py
         # rad = np.median(np.abs(W))  # radius
-        #rad = np.abs(W).max()
         
         rad = np.abs(W).max()
-
-        layer_alphabet = alphabet * rad / 2
-
-        # layer_alphabet = W.shape[1] *1e-2 * len(alphabet) * alphabet
+        layer_alphabet = alphabet * rad 
 
         Q = np.zeros_like(W)
         results = [pool.apply_async(StepAlgorithm._quantize_neuron, 

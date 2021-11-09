@@ -2,8 +2,9 @@ import csv
 
 log_file_name = 'Quantization_Log.csv'
 
-fields = ['Model Name', 'Dataset', 'Quantizationo Batch Size', 'Original Test Accuracy',
-          'Quantized Test Accuracy', 'Bits', 'Include 0', 'Seed', 'Author']
+fields = ['Model Name', 'Dataset', 'Quantization Batch Size', 'Original Test Accuracy',
+          'Quantized Top1 Accuracy', 'Quantized Top5 Accuracy', 'Bits', 'Alphabet_Scalar', 
+          'Include 0', 'Seed', 'Author']
 
 if __name__ == '__main__':
     pass
