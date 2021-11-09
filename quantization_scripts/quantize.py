@@ -9,7 +9,7 @@ import os
 import csv
 
 from quantize_neural_net import QuantizeNeuralNet
-# from model_trainer import test_model
+from helper_tools import test_accuracy
 from data_loaders import data_loader
 
 
@@ -36,7 +36,7 @@ if __name__ == '__main__':
     # hyperparameter section
     author = 'Jinjie'
     seed = 0
-    batch_size = 8  # batch_size used for quantization
+    batch_size = 16  # batch_size used for quantization
     num_workers = 4
     bits = 1 
     data_set = 'ILSVRC2012'   # 'ILSVRC2012', 'CIFAR10', 'MNIST' 
@@ -45,7 +45,8 @@ if __name__ == '__main__':
     transform = default_transform
     include_0 = True
     ignore_layers = []
-    alphabet_scalar = 1
+    alphabet_scalar = 0.5   # final alphabet is 
+    # np.linspace(-1, 1, num=int(2 ** bits)) * rad * alphabet_scalar
     # end of hyperparameter section
     
     # load the model to be quantized
@@ -69,24 +70,24 @@ if __name__ == '__main__':
         saved_model_name = f'batch{batch_size}_b{bits}_scaler{alphabet_scalar}_ds{data_set}'
 
     torch.save(quantized_model, os.path.join('../models/'+model_name, saved_model_name))
-    
-    # if not original_test_accuracy:
-    #     print(f'\nEvaluting the original model to get its accuracy\n')
-    #     predictions, labels = test_model(test_loader, model)
-    #     original_test_accuracy = np.sum(predictions == labels) / len(labels)
-    
-    # print(f'\nEvaluting the quantized model to get its accuracy\n')
-    # predictions, labels = test_model(test_loader, quantized_model)
-    # test_accuracy = np.sum(predictions == labels) / len(labels)
-    
-    # print(f'The testing accuracy is: {test_accuracy}.')
 
-    # with open(log_file_name, 'a') as f:
-    #     csv_writer = csv.writer(f)
-    #     row = [
-    #         model_name, data_set, batch_size, 
-    #         original_test_accuracy, test_accuracy, bits,
-    #         include_0, seed, author
-    #     ]
-    #     csv_writer.writerow(row)
+    topk = (1, 5)   # top-1 and top-5 accuracy
+    if not original_test_accuracy:
+        print(f'\n Evaluting the original model to get its accuracy\n')
+        topk_accuracy = test_accuracy(model, test_loader, topk)
+        print(f'Top-1 accuracy of {model_name} is {topk_accuracy[0]}.')
+        print(f'Top-5 accuracy of {model_name} is {topk_accuracy[1]}.')
+    
+    print(f'\n Evaluting the quantized model to get its accuracy\n')
+    topk_accuracy = test_accuracy(quantized_model, test_loader, topk)
+    print(f'Top-1 accuracy of quantized {model_name} is {topk_accuracy[0]}.')
+    print(f'Top-5 accuracy of quantized {model_name} is {topk_accuracy[1]}.')
 
+    with open(log_file_name, 'a') as f:
+        csv_writer = csv.writer(f)
+        row = [
+            model_name, data_set, batch_size, 
+            original_test_accuracy, topk_accuracy[0], topk_accuracy[1], 
+            bits, alphabet_scalar, include_0, seed, author
+        ]
+        csv_writer.writerow(row)
