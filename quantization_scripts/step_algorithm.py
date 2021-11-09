@@ -178,3 +178,21 @@ class StepAlgorithm:
         relative_quantize_error = np.linalg.norm(analog_layer_input @ W.T  
                                  - quantized_layer_input @ Q.T, ord='fro') / np.linalg.norm(analog_layer_input @ W.T, ord='fro')
         return Q, quantize_error, relative_quantize_error
+    
+    
+    
+        # SOME MSQ stuffs if we want
+        # Q_temp = np.zeros_like(W)
+
+        # for i in range(len(Q_temp)):
+        #     for j in range(len(Q_temp[i])):
+        #         if W[i][j] > 1 * rad / 4:
+        #             Q_temp[i][j] = 1 * rad / 2
+        #         elif W[i][j] < - 1 * rad / 4:
+        #             Q_temp[i][j] = -1 * rad / 2
+        #         else:
+        #             Q_temp[i][j] = 0
+        
+        # msq_quantize_error = np.linalg.norm(analog_layer_input @ W.T  
+        #                 - quantized_layer_input @ Q_temp.T, ord='fro')
+        # print(f'msq: {msq_quantize_error}')
