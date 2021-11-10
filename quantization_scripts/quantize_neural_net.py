@@ -1,6 +1,7 @@
 from __future__ import annotations
 import torch
 import torch.nn as nn
+import torchvision
 import torch.nn.functional as F
 import numpy as np
 import copy
@@ -82,7 +83,7 @@ class QuantizeNeuralNet():
         Recursively obtain layers of given network
         """
         for layer in network.children():
-            if type(layer) == nn.Sequential:
+            if type(layer) == nn.Sequential or torchvision.models.resnet.BasicBlock:
                 # if sequential layer, apply recursively to layers in sequential layer
                 self._extract_layers(layer, layer_list)
             if not list(layer.children()):
@@ -151,6 +152,9 @@ class QuantizeNeuralNet():
             
             print(f'Shape of weight matrix is {W.shape}')
             print(f'Shape of X is {analog_layer_input.shape}')
+            print(f'Median of W is {np.quantile(np.abs(W), 0.5, axis=1).mean()}')
+            print(f'75q of W is {np.quantile(np.abs(W), 0.75, axis=1).mean()}')
+            print(f'Max of W is {np.quantile(np.abs(W), 1, axis=1).mean()}')
             print(f'The quantization error of layer {layer_idx} is {quantize_error}.')
             print(f'The relative quantization error of layer {layer_idx} is {relative_quantize_error}.\n')
 
