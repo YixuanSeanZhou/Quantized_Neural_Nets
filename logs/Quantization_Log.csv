@@ -1,0 +1,3 @@
+Model Name,Dataset,Quantization Batch Size,Original Top1 Accuracy,Quantized Top1 Accuracy,Original Top5 Accuracy,Quantized Top5 Accuracy,Bits,Alphabet_Scalar,Include 0,Seed,Author
+vgg16,ILSVRC2012,32,0.71592,0.5467,0.90382,0.80648,3,7,False,0,Yixuan
+vgg16,ILSVRC2012,16,0.71592,0.5062,0.90382,0.76904,4,7,False,0,Yixuan

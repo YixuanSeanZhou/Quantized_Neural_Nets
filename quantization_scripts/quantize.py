@@ -33,8 +33,8 @@ if __name__ == '__main__':
                                         std=[0.229, 0.224, 0.225])
                         ])
     
-    hyper_bits = [3, 4]
-    hyper_s = [3, 4, 5, 6, 7]
+    hyper_bits = [4, 3]
+    hyper_s = [7, 8, 9]
 
     hyperparams = [(b, s) for b in hyper_bits for s in hyper_s]
 
@@ -43,11 +43,11 @@ if __name__ == '__main__':
         # hyperparameter section
         author = 'Yixuan'
         seed = 0
-        batch_size = 32  # batch_size used for quantization
+        batch_size = 16  # batch_size used for quantization
         num_workers = 8
         bits = b  # 1, 2, 3, 4
         data_set = 'ILSVRC2012'   # 'ILSVRC2012', 'CIFAR10', 'MNIST' 
-        model_name = 'alexnet' # choose models 
+        model_name = 'vgg16' # choose models 
         transform = default_transform
         include_0 = False
         ignore_layers = []
