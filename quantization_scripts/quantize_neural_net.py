@@ -267,7 +267,6 @@ class SaveInputConv2d:
         self.p = retain_rate
         self.unfolder = nn.Unfold(kernel_size, dilation, padding, kernel_size)
         self.inputs = []
-        self.rand_idx = []
         self.call_count = 0
         
 
