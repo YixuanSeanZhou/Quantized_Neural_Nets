@@ -12,6 +12,8 @@ from quantize_neural_net import QuantizeNeuralNet
 from helper_tools import test_accuracy
 from data_loaders import data_loader
 
+from my_models import LeNet5
+
 
 log_file_name = '../logs/Quantization_Log.csv'
 
@@ -21,7 +23,7 @@ fields = ['Model Name', 'Dataset', 'Original Test Accuracy',
 
 if __name__ == '__main__':
     
-    # LeNet_transform = transforms.Compose([transforms.Resize((32, 32)), transforms.ToTensor()])
+    LeNet_transform = transforms.Compose([transforms.Resize((32, 32)), transforms.ToTensor()])
 
     # default_transform is used for all pretrained models and Normalize is mandatory
     # see https://pytorch.org/vision/stable/models.html
@@ -34,7 +36,7 @@ if __name__ == '__main__':
                         ])
     
     hyper_bits = [4, 3]
-    hyper_s = [7, 8, 9]
+    hyper_s = [8.5, 9, 8]
 
     hyperparams = [(b, s) for b in hyper_bits for s in hyper_s]
 
@@ -43,19 +45,26 @@ if __name__ == '__main__':
         # hyperparameter section
         author = 'Yixuan'
         seed = 0
-        batch_size = 16  # batch_size used for quantization
+        batch_size = 128  # batch_size used for quantization
         num_workers = 8
         bits = b  # 1, 2, 3, 4
-        data_set = 'ILSVRC2012'   # 'ILSVRC2012', 'CIFAR10', 'MNIST' 
-        model_name = 'vgg16' # choose models 
-        transform = default_transform
-        include_0 = False
+        data_set = 'MNIST'   # 'ILSVRC2012', 'CIFAR10', 'MNIST' 
+        model_name = 'LeNet' # choose models 
+        transform = LeNet_transform
+        include_0 = True
         ignore_layers = []
+        retain_rate = 0.25
         alphabet_scalar = s   # 2, 3, 4, 5
         
-        # load the model to be quantized
-        model = getattr(torchvision.models, model_name)(pretrained=True) 
-        model.eval()  # eval() is necessary 
+        if model_name in {'LeNet', 'CNN'}:
+            model_path = f'{model_name}_{data_set}.pt'
+            model_path = os.path.join('../models', model_path)
+            model = torch.load(model_path, map_location=torch.device('cpu'))
+            model.eval()
+        else:
+            # load the model to be quantized
+            model = getattr(torchvision.models, model_name)(pretrained=True) 
+            model.eval()  # eval() is necessary 
 
         print(f'\nQuantizing {model_name} with bits: {bits}, include_0: {include_0}, scaler: {alphabet_scalar}\n')
         
@@ -67,13 +76,14 @@ if __name__ == '__main__':
                                     train_loader, bits=bits,
                                     include_zero=include_0, 
                                     ignore_layers=ignore_layers,
-                                    alphabet_scalar=alphabet_scalar)
+                                    alphabet_scalar=alphabet_scalar,
+                                    retain_rate=retain_rate)
         quantized_model = quantizer.quantize_network()
 
         if include_0:
-            saved_model_name = f'batch{batch_size}_b{bits}_include0_scaler{alphabet_scalar}_ds{data_set}'
+            saved_model_name = f'batch{batch_size}_b{bits}_include0_scaler{alphabet_scalar}_retain_rate{retain_rate}_ds{data_set}'
         else: 
-            saved_model_name = f'batch{batch_size}_b{bits}_scaler{alphabet_scalar}_ds{data_set}'
+            saved_model_name = f'batch{batch_size}_b{bits}_scaler{alphabet_scalar}_retain_rate{retain_rate}_ds{data_set}'
 
         torch.save(quantized_model, os.path.join('../models/'+model_name, saved_model_name))
 
@@ -93,6 +103,6 @@ if __name__ == '__main__':
             row = [
                 model_name, data_set, batch_size, 
                 original_topk_accuracy[0], topk_accuracy[0], original_topk_accuracy[1], topk_accuracy[1], 
-                bits, alphabet_scalar, include_0, seed, author
+                bits, alphabet_scalar, include_0, retain_rate, seed, author
             ]
             csv_writer.writerow(row)
