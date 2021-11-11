@@ -265,7 +265,7 @@ class SaveInputConv2d:
             The ratio to retain after unfold.
         '''
         self.p = retain_rate
-        self.unfolder = nn.Unfold(kernel_size, dilation, padding, stride)
+        self.unfolder = nn.Unfold(kernel_size, dilation, padding, kernel_size)
         self.inputs = []
         
 

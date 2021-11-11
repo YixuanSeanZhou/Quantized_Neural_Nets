@@ -48,8 +48,8 @@ if __name__ == '__main__':
         batch_size = 128  # batch_size used for quantization
         num_workers = 8
         bits = b  # 1, 2, 3, 4
-        data_set = 'MNIST'   # 'ILSVRC2012', 'CIFAR10', 'MNIST' 
-        model_name = 'LeNet' # choose models 
+        data_set = 'ILSVRC2012'   # 'ILSVRC2012', 'CIFAR10', 'MNIST' 
+        model_name = 'alexnet' # choose models 
         transform = LeNet_transform
         include_0 = True
         ignore_layers = []
