@@ -33,7 +33,8 @@ class QuantizeNeuralNet():
         The data_loader to load data
     '''
     def __init__(self, network_to_quantize, batch_size, data_loader, bits, 
-                 include_zero = False, ignore_layers=[], alphabet_scalar=1):
+                 include_zero = False, ignore_layers=[], alphabet_scalar=1,
+                 retain_rate=0.5):
         '''
         Init the object that is used for quantizing the given neural net.
         Parameters
@@ -53,7 +54,8 @@ class QuantizeNeuralNet():
         alphabet_scaler: float,
             The alphabet_scaler used to determine the radius \
             of the alphabet for each layer.
-        
+        retain_rate: float,
+            The ratio to retain after unfold.
         Returns
         -------
         QuantizeNeuralNet
@@ -70,6 +72,7 @@ class QuantizeNeuralNet():
             self.alphabet = np.append(self.alphabet, 0)
 
         self.ignore_layers = ignore_layers
+        self.retain_rate = retain_rate
         
         self.quantized_network = copy.deepcopy(self.analog_network)
         self.analog_network_layers = [] 
@@ -193,7 +196,8 @@ class QuantizeNeuralNet():
                 kernel_size=analog_layer.kernel_size,
                 dilation=analog_layer.dilation,
                 padding=analog_layer.padding,
-                stride=analog_layer.stride
+                stride=analog_layer.stride,
+                retain_rate=self.retain_rate
             )
         else:
             raise TypeError(f'The layer type {type(analog_layer)} is not currently supported')
@@ -243,7 +247,7 @@ class SaveInputConv2d:
     This class is useed to store inputs from original/quantizeed neural netwroks
     for conv layers.
     '''
-    def __init__(self, kernel_size, dilation, padding, stride):
+    def __init__(self, kernel_size, dilation, padding, stride, retain_rate):
         '''
         Init the SaveInputConv2d object
         
@@ -257,9 +261,14 @@ class SaveInputConv2d:
             The padding used of the conv2d layer who takes the input
         stride: int or tuple
             The stride of of the conv2d layer who takes the input
+        retain_rate: float
+            The ratio to retain after unfold.
         '''
-        self.unfolder = nn.Unfold(kernel_size, dilation, padding, stride)
+        self.p = retain_rate
+        self.unfolder = nn.Unfold(kernel_size, dilation, padding, kernel_size)
         self.inputs = []
+        self.rand_idx = []
+        self.call_count = 0
         
 
     def __call__(self, module, module_in, module_out):
@@ -268,8 +277,18 @@ class SaveInputConv2d:
         # module_in has shape (B, C, H, W) 
         # Need to consider both batch_size B and in_channels C
         unfolded = self.unfolder(module_in[0])  # shape (B, C*kernel_size[0]*kernel_size[1], L)
+        batch_size, num_blocks = unfolded.shape[0], unfolded.shape[-1]
         unfolded = torch.transpose(unfolded, 1, 2) # shape (B, L, C*kernel_size[0]*kernel_size[1])
-        unfolded = unfolded.reshape(-1, unfolded.size(-1)) # shape (B*L, C*kernel_size[0]*kernel_size[1])
-        self.inputs.append(unfolded.numpy())  
+        unfolded = unfolded.reshape(-1, unfolded.size(-1)).numpy() # shape (B*L, C*kernel_size[0]*kernel_size[1])
+        if self.call_count == 0:
+            self.rand_indices = np.concatenate(
+                        [np.random.choice(np.arange(num_blocks*i, num_blocks*(i+1)), 
+                        size=int(self.p*num_blocks + 1 if self.p != 1 else self.p*num_blocks)) 
+                        for i in range(batch_size)]
+                        ) # need to define self.p (probability)
+        self.call_count += 1
+        unfolded = unfolded[self.rand_indices]
+        self.inputs.append(unfolded)
         raise InterruptException
+        
     

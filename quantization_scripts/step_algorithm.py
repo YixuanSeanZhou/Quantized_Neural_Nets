@@ -3,6 +3,8 @@ from __future__ import annotations
 import numpy as np
 import multiprocessing as mp
 
+import gc
+
 from tqdm import tqdm
 
 class StepAlgorithm:
@@ -117,6 +119,9 @@ class StepAlgorithm:
                                                     alphabet)
             u += w[t] * X_analog - q[t] * X_quantize
 
+        del X_analog
+        del X_quantize
+        gc.collect()
         return neuron_idx, q
 
 
@@ -141,7 +146,7 @@ class StepAlgorithm:
             The quantized layer.
         '''
         # Start quantize 
-        pool = mp.Pool(mp.cpu_count()-1)
+        pool = mp.Pool(mp.cpu_count() - 1)
 
         # FIXME: This defeats the purpose, partially
         # May move the layer_alphabet to quantize_neural_net.py
@@ -161,7 +166,7 @@ class StepAlgorithm:
             idx, q = results[i].get()
             Q[idx, :] = q
 
-        # for i, w in tqdm(enumerate(W)):
+        # for i, w in enumerate(tqdm(W)):
         #     idx, q = StepAlgorithm._quantize_neuron(w, i, 
         #                                         analog_layer_input, 
         #                                         quantized_layer_input,
@@ -173,4 +178,27 @@ class StepAlgorithm:
                             - quantized_layer_input @ Q.T, ord='fro')
         relative_quantize_error = np.linalg.norm(analog_layer_input @ W.T  
                                  - quantized_layer_input @ Q.T, ord='fro') / np.linalg.norm(analog_layer_input @ W.T, ord='fro')
+        return Q, quantize_error, relative_quantize_error
+    
+    
+    
+        # SOME MSQ stuffs if we want
+        # Q_temp = np.zeros_like(W)
+
+        # for i in range(len(Q_temp)):
+        #     for j in range(len(Q_temp[i])):
+        #         if W[i][j] > 1 * rad / 4:
+        #             Q_temp[i][j] = 1 * rad / 2
+        #         elif W[i][j] < - 1 * rad / 4:
+        #             Q_temp[i][j] = -1 * rad / 2
+        #         else:
+        #             Q_temp[i][j] = 0
+        
+        # msq_quantize_error = np.linalg.norm(analog_layer_input @ W.T  
+        #                 - quantized_layer_input @ Q_temp.T, ord='fro')
+        # print(f'msq: {msq_quantize_error}')
+
+        del pool
+        gc.collect()
+
         return Q, quantize_error, relative_quantize_error
