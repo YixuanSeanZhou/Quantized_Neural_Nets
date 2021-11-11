@@ -50,7 +50,7 @@ if __name__ == '__main__':
         bits = b  # 1, 2, 3, 4
         data_set = 'ILSVRC2012'   # 'ILSVRC2012', 'CIFAR10', 'MNIST' 
         model_name = 'alexnet' # choose models 
-        transform = LeNet_transform
+        transform = default_transform
         include_0 = True
         ignore_layers = []
         retain_rate = 0.25
