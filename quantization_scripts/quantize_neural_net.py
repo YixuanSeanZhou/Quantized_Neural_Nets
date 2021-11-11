@@ -267,6 +267,8 @@ class SaveInputConv2d:
         self.p = retain_rate
         self.unfolder = nn.Unfold(kernel_size, dilation, padding, kernel_size)
         self.inputs = []
+        self.rand_idx = []
+        self.call_count = 0
         
 
     def __call__(self, module, module_in, module_out):
@@ -278,12 +280,14 @@ class SaveInputConv2d:
         batch_size, num_blocks = unfolded.shape[0], unfolded.shape[-1]
         unfolded = torch.transpose(unfolded, 1, 2) # shape (B, L, C*kernel_size[0]*kernel_size[1])
         unfolded = unfolded.reshape(-1, unfolded.size(-1)).numpy() # shape (B*L, C*kernel_size[0]*kernel_size[1])
-        rand_indices = np.concatenate(
-                    [np.random.choice(np.arange(num_blocks*i, num_blocks*(i+1)), 
-                    size=int(self.p*num_blocks + 1 if self.p != 1 else self.p*num_blocks)) 
-                    for i in range(batch_size)]
-                    ) # need to define self.p (probability)
-        unfolded = unfolded[rand_indices]
+        if self.call_count == 0:
+            self.rand_indices = np.concatenate(
+                        [np.random.choice(np.arange(num_blocks*i, num_blocks*(i+1)), 
+                        size=int(self.p*num_blocks + 1 if self.p != 1 else self.p*num_blocks)) 
+                        for i in range(batch_size)]
+                        ) # need to define self.p (probability)
+        self.call_count += 1
+        unfolded = unfolded[self.rand_indices]
         self.inputs.append(unfolded)
         raise InterruptException
         
