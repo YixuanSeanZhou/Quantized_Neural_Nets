@@ -12,13 +12,7 @@ from quantize_neural_net import QuantizeNeuralNet
 from helper_tools import test_accuracy
 from data_loaders import data_loader
 
-from my_models import LeNet5
-
-
 log_file_name = '../logs/Quantization_Log.csv'
-
-fields = ['Model Name', 'Dataset', 'Original Test Accuracy',
-          'Quantized Test Accuracy', 'Bits', 'Include 0', 'Seed', 'Author']
 
 
 if __name__ == '__main__':
@@ -50,6 +44,7 @@ if __name__ == '__main__':
         bits = b  # 1, 2, 3, 4
         data_set = 'ILSVRC2012'   # 'ILSVRC2012', 'CIFAR10', 'MNIST' 
         model_name = 'alexnet' # choose models 
+        original_topk_accuracy = [None, None]  # original accuracy
         transform = default_transform
         include_0 = True
         ignore_layers = []
@@ -88,10 +83,10 @@ if __name__ == '__main__':
         torch.save(quantized_model, os.path.join('../models/'+model_name, saved_model_name))
 
         topk = (1, 5)   # top-1 and top-5 accuracy
-        print(f'\n Evaluting the original model to get its accuracy\n')
-        original_topk_accuracy = test_accuracy(model, test_loader, topk)
-        print(f'Top-1 accuracy of {model_name} is {original_topk_accuracy[0]}.')
-        print(f'Top-5 accuracy of {model_name} is {original_topk_accuracy[1]}.')
+        # print(f'\n Evaluting the original model to get its accuracy\n')
+        # original_topk_accuracy = test_accuracy(model, test_loader, topk)
+        # print(f'Top-1 accuracy of {model_name} is {original_topk_accuracy[0]}.')
+        # print(f'Top-5 accuracy of {model_name} is {original_topk_accuracy[1]}.')
         
         print(f'\n Evaluting the quantized model to get its accuracy\n')
         topk_accuracy = test_accuracy(quantized_model, test_loader, topk)
