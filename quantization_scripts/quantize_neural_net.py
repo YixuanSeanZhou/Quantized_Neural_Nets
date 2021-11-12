@@ -2,6 +2,7 @@ from __future__ import annotations
 import torch
 import torch.nn as nn
 import torchvision
+from torchvision.models.resnet import BasicBlock, Bottleneck
 import torch.nn.functional as F
 import numpy as np
 import copy
@@ -11,13 +12,12 @@ import gc
 from helper_tools import InterruptException
 from step_algorithm import StepAlgorithm
 
-# TEMP_ANALOG_TENSOR_FILE = 'temp_input_tensor_analog_file.pt'
-# TEMP_QUANTIZED_TENSOR_FILE = 'temp_input_tensor_quantized_file.pt'
 
 LINEAR_MODULE_TYPE = nn.Linear
 CONV2D_MODULE_TYPE = nn.Conv2d
 
 SUPPORTED_LAYER_TYPE = {LINEAR_MODULE_TYPE, CONV2D_MODULE_TYPE}
+SUPPORTED_BLOCK_TYPE = [nn.Sequential, BasicBlock, Bottleneck]
 
 class QuantizeNeuralNet():
     '''
@@ -86,7 +86,7 @@ class QuantizeNeuralNet():
         Recursively obtain layers of given network
         """
         for layer in network.children():
-            if type(layer) == nn.Sequential or torchvision.models.resnet.BasicBlock:
+            if type(layer) in SUPPORTED_BLOCK_TYPE:
                 # if sequential layer, apply recursively to layers in sequential layer
                 self._extract_layers(layer, layer_list)
             if not list(layer.children()):
