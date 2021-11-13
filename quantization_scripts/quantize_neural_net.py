@@ -1,4 +1,5 @@
 from __future__ import annotations
+from numpy.lib.function_base import percentile
 import torch
 import torch.nn as nn
 import torchvision
@@ -33,8 +34,8 @@ class QuantizeNeuralNet():
         The data_loader to load data
     '''
     def __init__(self, network_to_quantize, batch_size, data_loader, bits, 
-                 include_zero = False, ignore_layers=[], alphabet_scalar=1,
-                 retain_rate=0.5):
+                 include_zero = False, ignore_layers=[], 
+                 alphabet_scalar=1, percentile=0.5, retain_rate=0.5):
         '''
         Init the object that is used for quantizing the given neural net.
         Parameters
@@ -54,6 +55,8 @@ class QuantizeNeuralNet():
         alphabet_scaler: float,
             The alphabet_scaler used to determine the radius \
             of the alphabet for each layer.
+        percentile: float,
+            The percentile to use for finding each layer's alphabet.
         retain_rate: float,
             The ratio to retain after unfold.
         Returns
@@ -70,6 +73,7 @@ class QuantizeNeuralNet():
         self.alphabet = np.linspace(-1, 1, num=int(2 ** bits)) 
         if include_zero:
             self.alphabet = np.append(self.alphabet, 0)
+        self.percentile = percentile
 
         self.ignore_layers = ignore_layers
         self.retain_rate = retain_rate
@@ -130,7 +134,8 @@ class QuantizeNeuralNet():
                                                 analog_layer_input, 
                                                 quantized_layer_input, 
                                                 analog_layer_input.shape[0],
-                                                self.alphabet * self.alphabet_scalar
+                                                self.alphabet * self.alphabet_scalar, 
+                                                self.percentile
                                                 )
 
                 self.quantized_network_layers[layer_idx].weight.data = torch.Tensor(Q).float()
@@ -148,7 +153,8 @@ class QuantizeNeuralNet():
                                             analog_layer_input, 
                                             quantized_layer_input, 
                                             analog_layer_input.shape[0],
-                                            self.alphabet * self.alphabet_scalar
+                                            self.alphabet * self.alphabet_scalar,
+                                            self.percentile
                                             )
 
                 self.quantized_network_layers[layer_idx].weight.data = torch.Tensor(Q).float().view(W_shape)
@@ -157,6 +163,7 @@ class QuantizeNeuralNet():
             print(f'Shape of X is {analog_layer_input.shape}')
             print(f'Median of W is {np.quantile(np.abs(W), 0.5, axis=1).mean()}')
             print(f'75q of W is {np.quantile(np.abs(W), 0.75, axis=1).mean()}')
+            print(f'The {round(self.percentile, 2)} percentile of W is {np.quantile(np.abs(W), self.percentile, axis=1).mean()}')
             print(f'Max of W is {np.quantile(np.abs(W), 1, axis=1).mean()}')
             print(f'The quantization error of layer {layer_idx} is {quantize_error}.')
             print(f'The relative quantization error of layer {layer_idx} is {relative_quantize_error}.\n')
