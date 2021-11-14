@@ -1,5 +1,4 @@
 from __future__ import annotations
-from numpy.lib.function_base import percentile
 import torch
 import torch.nn as nn
 import torchvision
@@ -35,7 +34,7 @@ class QuantizeNeuralNet():
     '''
     def __init__(self, network_to_quantize, batch_size, data_loader, bits, 
                  include_zero = False, ignore_layers=[], 
-                 alphabet_scalar=1, percentile=0.5, retain_rate=0.5):
+                 alphabet_scalar=1, percentile=0.5, retain_rate=0.25):
         '''
         Init the object that is used for quantizing the given neural net.
         Parameters

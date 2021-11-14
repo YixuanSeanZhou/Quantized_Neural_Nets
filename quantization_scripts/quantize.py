@@ -16,24 +16,28 @@ log_file_name = '../logs/Quantization_Log.csv'
 
 
 if __name__ == '__main__':
-    
-    LeNet_transform = transforms.Compose([transforms.Resize((32, 32)), transforms.ToTensor()])
 
+    # hyperparameter section
+    bits_list = [3, 4]
+    scalar_list = [7.5]
+    batch_size_list = [512, 256, 128, 64, 32] # batch_size used for quantization
+    percentile_list = [0.5]   # quantile of weight matrix W
+    num_workers = 8
+    data_set = 'ILSVRC2012'   # 'ILSVRC2012', 'CIFAR10', 'MNIST' 
+    model_name = 'vgg16' # choose models 
+    include_0 = True
+    ignore_layers = []
+    retain_rate = 0.25
+    author = 'Yixuan'
     # default_transform is used for all pretrained models and Normalize is mandatory
     # see https://pytorch.org/vision/stable/models.html
-    default_transform = transforms.Compose([
+    transform = transforms.Compose([
                         transforms.Resize(256), 
                         transforms.CenterCrop(224),  
                         transforms.ToTensor(),
                         transforms.Normalize(mean=[0.485, 0.456, 0.406],
                                         std=[0.229, 0.224, 0.225])
                         ])
-    
-    hyper_bits = [3, 4]
-    hyper_s = [7.5]
-    hyper_batch_sizes = [512, 256, 128, 64, 32]
-    hyper_percentile = [0.5]
-    # hyper_batch_sizes = [256]
     
     # NOTE: When using other network, just copy from pytorch website to here.
     # https://pytorch.org/vision/stable/models.html
@@ -43,37 +47,24 @@ if __name__ == '__main__':
         'resnet18': (.69758, .89078),
     }
 
-    hyperparams = [(b, s, bs, per) for b in hyper_bits for s in hyper_s for bs in hyper_batch_sizes for per in hyper_percentile]
+    params = [(b, s, bs, per) for b in bits_list for s in scalar_list for 
+                        bs in batch_size_list for per in percentile_list]
 
 
-    for b, s, bs, per in hyperparams:
-
-        # hyperparameter section
-        author = 'Yixuan'
+    # testing section
+    for b, s, bs, per in params:
         seed = 0
-        batch_size = bs  # batch_size used for quantization
-        num_workers = 8
-        bits = b  # 1, 2, 3, 4
-        data_set = 'ILSVRC2012'   # 'ILSVRC2012', 'CIFAR10', 'MNIST' 
-        model_name = 'vgg16' # choose models 
-        transform = default_transform
-        include_0 = True
-        ignore_layers = []
-        retain_rate = 0.25
+        batch_size = bs  
+        bits = b  
         percentile = per
-        alphabet_scalar = s   # 2, 3, 4, 5
+        alphabet_scalar = s   
         
-        if model_name in {'LeNet', 'CNN'}:
-            model_path = f'{model_name}_{data_set}.pt'
-            model_path = os.path.join('../models', model_path)
-            model = torch.load(model_path, map_location=torch.device('cpu'))
-            model.eval()
-        else:
-            # load the model to be quantized
-            model = getattr(torchvision.models, model_name)(pretrained=True) 
-            model.eval()  # eval() is necessary 
+        # load the model to be quantized from PyTorch resource
+        model = getattr(torchvision.models, model_name)(pretrained=True) 
+        model.eval()  # eval() is necessary 
 
-        print(f'\nQuantizing {model_name} with bits: {bits}, include_0: {include_0}, scaler: {alphabet_scalar}, percentile: {percentile}, retain_rate: {retain_rate}\n')
+        print(f'\nQuantizing {model_name} with bits: {bits}, include_0: {include_0}, \
+                    scaler: {alphabet_scalar}, percentile: {percentile}, retain_rate: {retain_rate}\n')
         
         # load the data loader for training and testing
         train_loader, test_loader = data_loader(data_set, batch_size, transform, num_workers)
@@ -84,6 +75,7 @@ if __name__ == '__main__':
                                     include_zero=include_0, 
                                     ignore_layers=ignore_layers,
                                     alphabet_scalar=alphabet_scalar,
+                                    percentile=percentile,
                                     retain_rate=retain_rate)
         quantized_model = quantizer.quantize_network()
 

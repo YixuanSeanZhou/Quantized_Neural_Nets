@@ -169,20 +169,15 @@ class StepAlgorithm:
             idx, q = results[i].get()
             Q[idx, :] = q
 
-        # for i, w in enumerate(tqdm(W)):
-        #     idx, q = StepAlgorithm._quantize_neuron(w, i, 
-        #                                         analog_layer_input, 
-        #                                         quantized_layer_input,
-        #                                         m , layer_alphabet)
-        #     Q[idx, :] = q
-
         pool.close()
         quantize_error = np.linalg.norm(analog_layer_input @ W.T  
                             - quantized_layer_input @ Q.T, ord='fro')
         relative_quantize_error = np.linalg.norm(analog_layer_input @ W.T  
                                  - quantized_layer_input @ Q.T, ord='fro') / np.linalg.norm(analog_layer_input @ W.T, ord='fro')
+        
+        del pool
+        gc.collect()
         return Q, quantize_error, relative_quantize_error
-    
     
     
         # SOME MSQ stuffs if we want
@@ -200,8 +195,3 @@ class StepAlgorithm:
         # msq_quantize_error = np.linalg.norm(analog_layer_input @ W.T  
         #                 - quantized_layer_input @ Q_temp.T, ord='fro')
         # print(f'msq: {msq_quantize_error}')
-
-        del pool
-        gc.collect()
-
-        return Q, quantize_error, relative_quantize_error
