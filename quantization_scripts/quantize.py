@@ -63,8 +63,7 @@ if __name__ == '__main__':
         model = getattr(torchvision.models, model_name)(pretrained=True) 
         model.eval()  # eval() is necessary 
 
-        print(f'\nQuantizing {model_name} with bits: {bits}, include_0: {include_0}, \
-                    scaler: {alphabet_scalar}, percentile: {percentile}, retain_rate: {retain_rate}\n')
+        print(f'\nQuantizing {model_name} with bits: {bits}, include_0: {include_0}, scaler: {alphabet_scalar}, percentile: {percentile}, retain_rate: {retain_rate}\n')
         
         # load the data loader for training and testing
         train_loader, test_loader = data_loader(data_set, batch_size, transform, num_workers)
