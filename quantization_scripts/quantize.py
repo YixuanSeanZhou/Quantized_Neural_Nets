@@ -29,26 +29,38 @@ if __name__ == '__main__':
                                         std=[0.229, 0.224, 0.225])
                         ])
     
-    hyper_bits = [4, 3]
-    hyper_s = [8.5, 9, 8]
+    hyper_bits = [3, 4]
+    hyper_s = [7.5]
+    hyper_batch_sizes = [512, 256, 128, 64, 32]
+    hyper_percentile = [0.5]
+    # hyper_batch_sizes = [256]
+    
+    # NOTE: When using other network, just copy from pytorch website to here.
+    # https://pytorch.org/vision/stable/models.html
+    original_accuracy_table = {
+        'alexnet': (.56522, .79066),
+        'vgg16': (.71592, .90382),
+        'resnet18': (.69758, .89078),
+    }
 
-    hyperparams = [(b, s) for b in hyper_bits for s in hyper_s]
+    hyperparams = [(b, s, bs, per) for b in hyper_bits for s in hyper_s for bs in hyper_batch_sizes for per in hyper_percentile]
 
-    for b, s in hyperparams:
+
+    for b, s, bs, per in hyperparams:
 
         # hyperparameter section
         author = 'Yixuan'
         seed = 0
-        batch_size = 128  # batch_size used for quantization
+        batch_size = bs  # batch_size used for quantization
         num_workers = 8
         bits = b  # 1, 2, 3, 4
         data_set = 'ILSVRC2012'   # 'ILSVRC2012', 'CIFAR10', 'MNIST' 
-        model_name = 'alexnet' # choose models 
-        original_topk_accuracy = [None, None]  # original accuracy
+        model_name = 'vgg16' # choose models 
         transform = default_transform
         include_0 = True
         ignore_layers = []
         retain_rate = 0.25
+        percentile = per
         alphabet_scalar = s   # 2, 3, 4, 5
         
         if model_name in {'LeNet', 'CNN'}:
@@ -61,7 +73,7 @@ if __name__ == '__main__':
             model = getattr(torchvision.models, model_name)(pretrained=True) 
             model.eval()  # eval() is necessary 
 
-        print(f'\nQuantizing {model_name} with bits: {bits}, include_0: {include_0}, scaler: {alphabet_scalar}, retain_rate: {retain_rate}\n')
+        print(f'\nQuantizing {model_name} with bits: {bits}, include_0: {include_0}, scaler: {alphabet_scalar}, percentile: {percentile}, retain_rate: {retain_rate}\n')
         
         # load the data loader for training and testing
         train_loader, test_loader = data_loader(data_set, batch_size, transform, num_workers)
@@ -76,17 +88,23 @@ if __name__ == '__main__':
         quantized_model = quantizer.quantize_network()
 
         if include_0:
-            saved_model_name = f'batch{batch_size}_b{bits}_include0_scaler{alphabet_scalar}_retain_rate{retain_rate}_ds{data_set}'
+            saved_model_name = f'batch{batch_size}_b{bits}_include0_scaler{alphabet_scalar}_percentile{percentile}_retain_rate{retain_rate}_ds{data_set}'
         else: 
-            saved_model_name = f'batch{batch_size}_b{bits}_scaler{alphabet_scalar}_retain_rate{retain_rate}_ds{data_set}'
+            saved_model_name = f'batch{batch_size}_b{bits}_scaler{alphabet_scalar}_percentile{percentile}_retain_rate{retain_rate}_ds{data_set}'
 
         torch.save(quantized_model, os.path.join('../models/'+model_name, saved_model_name))
 
         topk = (1, 5)   # top-1 and top-5 accuracy
-        # print(f'\n Evaluting the original model to get its accuracy\n')
-        # original_topk_accuracy = test_accuracy(model, test_loader, topk)
-        # print(f'Top-1 accuracy of {model_name} is {original_topk_accuracy[0]}.')
-        # print(f'Top-5 accuracy of {model_name} is {original_topk_accuracy[1]}.')
+        
+        if model_name in original_accuracy_table:
+            print(f'\nUsing the original model accuracy from pytorch.\n')
+            original_topk_accuracy = original_accuracy_table[model_name]
+        else:
+            print(f'\nEvaluting the original model to get its accuracy\n')
+            original_topk_accuracy = test_accuracy(model, test_loader, topk)
+        
+        print(f'Top-1 accuracy of {model_name} is {original_topk_accuracy[0]}.')
+        print(f'Top-5 accuracy of {model_name} is {original_topk_accuracy[1]}.')
         
         print(f'\n Evaluting the quantized model to get its accuracy\n')
         topk_accuracy = test_accuracy(quantized_model, test_loader, topk)
@@ -98,6 +116,6 @@ if __name__ == '__main__':
             row = [
                 model_name, data_set, batch_size, 
                 original_topk_accuracy[0], topk_accuracy[0], original_topk_accuracy[1], topk_accuracy[1], 
-                bits, alphabet_scalar, include_0, retain_rate, seed, author
+                bits, alphabet_scalar, percentile, include_0, retain_rate, seed, author
             ]
             csv_writer.writerow(row)

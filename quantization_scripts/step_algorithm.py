@@ -125,7 +125,8 @@ class StepAlgorithm:
         return neuron_idx, q
 
 
-    def _quantize_layer(W, analog_layer_input, quantized_layer_input, m, alphabet):
+    def _quantize_layer(W, analog_layer_input, quantized_layer_input, m, 
+                        alphabet, percentile):
         '''
         Quantize one layer in parallel.
         Parameters
@@ -140,6 +141,8 @@ class StepAlgorithm:
             The batch size (num of input).
         alphabet : numpy.array
             Scalar numpy array listing the alphabet to perform quantization.
+        percentile: float
+            The percentile to take from each layer.
         Returns
         -------
         numpy.array
@@ -152,7 +155,7 @@ class StepAlgorithm:
         # May move the layer_alphabet to quantize_neural_net.py
         # rad = np.median(np.abs(W))  # radius
         
-        rad = np.quantile(np.abs(W), 0.5, axis=1).mean()
+        rad = np.quantile(np.abs(W), percentile, axis=1).mean()
         layer_alphabet = alphabet * rad 
 
         Q = np.zeros_like(W)
