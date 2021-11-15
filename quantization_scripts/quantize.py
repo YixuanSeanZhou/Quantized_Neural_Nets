@@ -18,10 +18,10 @@ log_file_name = '../logs/Quantization_Log.csv'
 if __name__ == '__main__':
 
     # hyperparameter section
-    bits_list = [3, 4]
-    scalar_list = [7.5]
-    batch_size_list = [512, 256, 128, 64, 32] # batch_size used for quantization
-    percentile_list = [0.5]   # quantile of weight matrix W
+    bits_list = [3]
+    scalar_list = [1.25]
+    batch_size_list = [64] # batch_size used for quantization
+    percentile_list = [1.0]   # quantile of weight matrix W
     num_workers = 8
     data_set = 'ILSVRC2012'   # 'ILSVRC2012', 'CIFAR10', 'MNIST' 
     model_name = 'vgg16' # choose models 
@@ -57,13 +57,15 @@ if __name__ == '__main__':
         batch_size = bs  
         bits = b  
         percentile = per
-        alphabet_scalar = s   
+        alphabet_scalar = s  
+
+        np.random.seed(seed)
         
         # load the model to be quantized from PyTorch resource
         model = getattr(torchvision.models, model_name)(pretrained=True) 
         model.eval()  # eval() is necessary 
 
-        print(f'\nQuantizing {model_name} with bits: {bits}, include_0: {include_0}, scaler: {alphabet_scalar}, percentile: {percentile}, retain_rate: {retain_rate}\n')
+        print(f'\nQuantizing {model_name} with bits: {bits}, include_0: {include_0}, scaler: {alphabet_scalar}, percentile: {percentile}, retain_rate: {retain_rate}, batch_size {batch_size}\n')
         
         # load the data loader for training and testing
         train_loader, test_loader = data_loader(data_set, batch_size, transform, num_workers)
@@ -77,6 +79,8 @@ if __name__ == '__main__':
                                     percentile=percentile,
                                     retain_rate=retain_rate)
         quantized_model = quantizer.quantize_network()
+
+        # exit(0) # TODO: delete after found the paramter choice
 
         if include_0:
             saved_model_name = f'batch{batch_size}_b{bits}_include0_scaler{alphabet_scalar}_percentile{percentile}_retain_rate{retain_rate}_ds{data_set}'

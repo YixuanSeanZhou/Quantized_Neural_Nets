@@ -1,0 +1,8 @@
+Model Name,Dataset,Quantization Batch Size,Original Top1 Accuracy,Quantized Top1 Accuracy,Original Top5 Accuracy,Quantized Top5 Accuracy,Bits,Alphabet_Scalar,Percentile,Include 0,Retain_rate,Seed,Author
+alexnet,ILSVRC2012,32,0.56522,0.081,0.79066,0.22312,3,1.1,1.0,True,0.25,0,Yixuan
+alexnet,ILSVRC2012,64,0.56522,0.28532,0.79066,0.53766,3,1.1,1.0,True,0.25,0,Yixuan
+alexnet,ILSVRC2012,128,0.56522,0.42292,0.79066,0.68394,3,1.1,1.0,True,0.25,0,Yixuan
+alexnet,ILSVRC2012,256,0.56522,0.4783,0.79066,0.73028,3,1.1,1.0,True,0.25,0,Yixuan
+alexnet,ILSVRC2012,512,0.56522,0.50204,0.79066,0.75004,3,1.1,1.0,True,0.25,0,Yixuan
+alexnet,ILSVRC2012,1024,0.56522,0.51864,0.79066,0.76262,3,1.1,1.0,True,0.25,0,Yixuan
+alexnet,ILSVRC2012,2048,0.56522,0.53226,0.79066,0.7695,3,1.1,1.0,True,0.25,0,Yixuan
