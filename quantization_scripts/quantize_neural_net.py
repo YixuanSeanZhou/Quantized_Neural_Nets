@@ -169,7 +169,7 @@ class QuantizeNeuralNet():
 
             del analog_layer_input, quantized_layer_input
             gc.collect()
-            # return self.quantized_network # TODO: delete this
+
         return self.quantized_network
 
         

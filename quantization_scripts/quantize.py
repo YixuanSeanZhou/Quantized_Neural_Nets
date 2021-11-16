@@ -18,9 +18,9 @@ log_file_name = '../logs/Quantization_Log.csv'
 if __name__ == '__main__':
 
     # hyperparameter section
-    bits_list = [3]
-    scalar_list = [1.25]
-    batch_size_list = [64] # batch_size used for quantization
+    bits_list = [4]
+    scalar_list = [0.975]
+    batch_size_list = [32, 64, 128] # batch_size used for quantization
     percentile_list = [1.0]   # quantile of weight matrix W
     num_workers = 8
     data_set = 'ILSVRC2012'   # 'ILSVRC2012', 'CIFAR10', 'MNIST' 
@@ -79,8 +79,6 @@ if __name__ == '__main__':
                                     percentile=percentile,
                                     retain_rate=retain_rate)
         quantized_model = quantizer.quantize_network()
-
-        # exit(0) # TODO: delete after found the paramter choice
 
         if include_0:
             saved_model_name = f'batch{batch_size}_b{bits}_include0_scaler{alphabet_scalar}_percentile{percentile}_retain_rate{retain_rate}_ds{data_set}'
