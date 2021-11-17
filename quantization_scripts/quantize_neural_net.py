@@ -3,6 +3,7 @@ import torch
 import torch.nn as nn
 import torchvision
 from torchvision.models.resnet import BasicBlock, Bottleneck
+from torchvision.models.googlenet import BasicConv2d, Inception, InceptionAux
 import torch.nn.functional as F
 import numpy as np
 import copy
@@ -17,7 +18,10 @@ LINEAR_MODULE_TYPE = nn.Linear
 CONV2D_MODULE_TYPE = nn.Conv2d
 
 SUPPORTED_LAYER_TYPE = {LINEAR_MODULE_TYPE, CONV2D_MODULE_TYPE}
-SUPPORTED_BLOCK_TYPE = [nn.Sequential, BasicBlock, Bottleneck]
+SUPPORTED_BLOCK_TYPE = {nn.Sequential, 
+                        BasicBlock, Bottleneck,
+                        BasicConv2d, Inception, InceptionAux,
+                        }
 
 class QuantizeNeuralNet():
     '''
