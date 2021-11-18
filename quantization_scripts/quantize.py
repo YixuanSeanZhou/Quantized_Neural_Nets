@@ -48,6 +48,8 @@ if __name__ == '__main__':
         'alexnet': (.56522, .79066),
         'vgg16': (.71592, .90382),
         'resnet18': (.69758, .89078),
+        'resnet50': (.7613, .92862),
+        'googlenet': (.69778, .89530)
     }
 
     params = [(b, s, bs, per) for b in bits_list for s in scalar_list for 
