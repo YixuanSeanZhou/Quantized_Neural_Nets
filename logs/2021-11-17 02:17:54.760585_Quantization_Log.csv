@@ -1,0 +1,6 @@
+Model Name,Dataset,Quantization Batch Size,Original Top1 Accuracy,Quantized Top1 Accuracy,Original Top5 Accuracy,Quantized Top5 Accuracy,Bits,Alphabet_Scalar,Percentile,Include 0,Retain_rate,Seed,Author
+vgg16,ILSVRC2012,256,0.71592,0.70602,0.90382,0.89872,4,0.975,1.0,True,0.25,0,Yixuan
+vgg16,ILSVRC2012,512,0.71592,0.707,0.90382,0.89964,4,0.975,1.0,True,0.25,0,Yixuan
+vgg16,ILSVRC2012,32,0.71592,0.61272,0.90382,0.84558,4,0.975,1.0,True,0.25,0,Yixuan
+vgg16,ILSVRC2012,64,0.71592,0.68038,0.90382,0.8848,4,0.975,1.0,True,0.25,0,Yixuan
+vgg16,ILSVRC2012,128,0.71592,0.69874,0.90382,0.89496,4,0.975,1.0,True,0.25,0,Yixuan

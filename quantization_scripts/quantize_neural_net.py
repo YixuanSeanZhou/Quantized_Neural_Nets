@@ -36,7 +36,8 @@ class QuantizeNeuralNet():
     data_loader: function
         The data_loader to load data
     '''
-    def __init__(self, network_to_quantize, batch_size, data_loader, bits, 
+    def __init__(self, network_to_quantize, batch_size, data_loader, 
+                 mlp_bits, cnn_bits,
                  include_zero = False, ignore_layers=[], 
                  alphabet_scalar=1, percentile=0.5, retain_rate=0.25):
         '''
@@ -49,8 +50,10 @@ class QuantizeNeuralNet():
             The batch size input to each layer when quantization is performed.
         data_loader: function,
             The generator that loads the raw dataset
-        bits : int
-            Num of bits that alphabet is used.
+        mlp_bits : int
+            Num of bits that mlp alphabet is used.
+        cnn_bits: int
+            Num of bits that cnn alphabet is used.
         include_zero: bool
             Indicate whether to augment the alphabet with a 0.
         ignore_layers : List[int]
@@ -60,7 +63,7 @@ class QuantizeNeuralNet():
             of the alphabet for each layer.
         percentile: float,
             The percentile to use for finding each layer's alphabet.
-        retain_rate: float,
+        retain_rate: float:
             The ratio to retain after unfold.
         Returns
         -------
@@ -72,10 +75,13 @@ class QuantizeNeuralNet():
         self.data_loader_iter = iter(data_loader)
 
         self.alphabet_scalar = alphabet_scalar
-        self.bits = bits
-        self.alphabet = np.linspace(-1, 1, num=int(2 ** bits)) 
+        self.mlp_bits = mlp_bits
+        self.cnn_bits = cnn_bits
+        self.mlp_alphabet = np.linspace(-1, 1, num=int(2 ** mlp_bits))
+        self.cnn_alphabet = np.linspace(-1, 1, num=int(2 ** cnn_bits))
         if include_zero:
-            self.alphabet = np.append(self.alphabet, 0)
+            self.mlp_alphabet = np.append(self.mlp_alphabet, 0)
+            self.cnn_alphabet = np.append(self.cnn_alphabet, 0)
         self.percentile = percentile
 
         self.ignore_layers = ignore_layers
@@ -119,6 +125,7 @@ class QuantizeNeuralNet():
                 ]
         
         print(f'Layer idx to quantize {layers_to_quantize}')
+        print(f'Total num to quantize {len(layers_to_quantize)}')
 
         for layer_idx in layers_to_quantize:
             gc.collect()
@@ -137,7 +144,7 @@ class QuantizeNeuralNet():
                                                 analog_layer_input, 
                                                 quantized_layer_input, 
                                                 analog_layer_input.shape[0],
-                                                self.alphabet * self.alphabet_scalar, 
+                                                self.mlp_alphabet * self.alphabet_scalar, 
                                                 self.percentile
                                                 )
 
@@ -156,7 +163,7 @@ class QuantizeNeuralNet():
                                             analog_layer_input, 
                                             quantized_layer_input, 
                                             analog_layer_input.shape[0],
-                                            self.alphabet * self.alphabet_scalar,
+                                            self.cnn_alphabet * self.alphabet_scalar,
                                             self.percentile
                                             )
 
@@ -243,13 +250,29 @@ class SaveInputMLP:
     """
     def __init__(self):
         self.inputs = []
-        
+        # self.batch_size = batch_size
+        # self.p = 0.125
+        # self.call_count = 0
+        # self.rand_indices = []
 
     def __call__(self, module, module_in, module_out):
         if len(module_in) != 1:
             raise TypeError('The number of input layer is not equal to one!')
+    
         self.inputs.append(module_in[0].numpy())
         raise InterruptException
+
+        # batch_size = module_in[0].shape[0]
+
+        # if self.call_count == 0:
+        #     self.rand_indices = np.random.choice(np.arange(0, batch_size), size=int(self.p*batch_size + 1 if self.p != 1 else batch_size)) 
+        # self.call_count += 1
+        
+        # module_in_numpy = module_in[0].numpy()
+
+        # self.inputs.append(module_in_numpy[self.rand_indices])
+        
+        # raise InterruptException
 
 
 class SaveInputConv2d:

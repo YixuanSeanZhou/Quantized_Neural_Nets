@@ -18,13 +18,14 @@ log_file_name = '../logs/Quantization_Log.csv'
 if __name__ == '__main__':
 
     # hyperparameter section
-    bits_list = [4]
-    scalar_list = [0.975]
-    batch_size_list = [32, 64, 128] # batch_size used for quantization
+    cnn_bits_list = [5]
+    mlp_bits_list = [5]
+    scalar_list = [1.1] 
+    batch_size_list = [4096] # batch_size used for quantization
     percentile_list = [1.0]   # quantile of weight matrix W
     num_workers = 8
     data_set = 'ILSVRC2012'   # 'ILSVRC2012', 'CIFAR10', 'MNIST' 
-    model_name = 'vgg16' # choose models 
+    model_name = 'alexnet' # choose models 
     include_0 = True
     ignore_layers = []
     retain_rate = 0.25
@@ -45,17 +46,20 @@ if __name__ == '__main__':
         'alexnet': (.56522, .79066),
         'vgg16': (.71592, .90382),
         'resnet18': (.69758, .89078),
+        'googlenet': (.69778, .89530),
     }
 
-    params = [(b, s, bs, per) for b in bits_list for s in scalar_list for 
-                        bs in batch_size_list for per in percentile_list]
+    params = [(cb, mb, s, bs, per) for cb in cnn_bits_list for mb in mlp_bits_list 
+                              for s in scalar_list for bs in batch_size_list
+                              for per in percentile_list]
 
 
     # testing section
-    for b, s, bs, per in params:
+    for cb, mb, s, bs, per in params:
         seed = 0
         batch_size = bs  
-        bits = b  
+        cnn_bits = cb
+        mlp_bits = mb
         percentile = per
         alphabet_scalar = s  
 
@@ -65,25 +69,28 @@ if __name__ == '__main__':
         model = getattr(torchvision.models, model_name)(pretrained=True) 
         model.eval()  # eval() is necessary 
 
-        print(f'\nQuantizing {model_name} with bits: {bits}, include_0: {include_0}, scaler: {alphabet_scalar}, percentile: {percentile}, retain_rate: {retain_rate}, batch_size {batch_size}\n')
+        print(f'\nQuantizing {model_name} with mlp_bits: {mlp_bits}, cnn_bits: {cnn_bits}, include_0: {include_0}, scaler: {alphabet_scalar}, percentile: {percentile}, retain_rate, {retain_rate}, batch_size {batch_size}\n')
         
         # load the data loader for training and testing
         train_loader, test_loader = data_loader(data_set, batch_size, transform, num_workers)
         
         # quantize the neural net
         quantizer = QuantizeNeuralNet(model, batch_size, 
-                                    train_loader, bits=bits,
-                                    include_zero=include_0, 
-                                    ignore_layers=ignore_layers,
-                                    alphabet_scalar=alphabet_scalar,
-                                    percentile=percentile,
-                                    retain_rate=retain_rate)
+                                     train_loader, 
+                                     mlp_bits=mlp_bits,
+                                     cnn_bits=cnn_bits,
+                                     include_zero=include_0, 
+                                     ignore_layers=ignore_layers,
+                                     alphabet_scalar=alphabet_scalar,
+                                     percentile=percentile,
+                                     retain_rate=retain_rate,
+                                     )
         quantized_model = quantizer.quantize_network()
 
         if include_0:
-            saved_model_name = f'batch{batch_size}_b{bits}_include0_scaler{alphabet_scalar}_percentile{percentile}_retain_rate{retain_rate}_ds{data_set}'
+            saved_model_name = f'batch{batch_size}_mlpb{mlp_bits}_cnnb{cnn_bits}_include0_scaler{alphabet_scalar}_percentile{percentile}_retain_rate{retain_rate}_ds{data_set}'
         else: 
-            saved_model_name = f'batch{batch_size}_b{bits}_scaler{alphabet_scalar}_percentile{percentile}_retain_rate{retain_rate}_ds{data_set}'
+            saved_model_name = f'batch{batch_size}_mlpb{mlp_bits}_cnnb{cnn_bits}_scaler{alphabet_scalar}_percentile{percentile}_retain_rate{retain_rate}_ds{data_set}'
 
         torch.save(quantized_model, os.path.join('../models/'+model_name, saved_model_name))
 
@@ -109,6 +116,6 @@ if __name__ == '__main__':
             row = [
                 model_name, data_set, batch_size, 
                 original_topk_accuracy[0], topk_accuracy[0], original_topk_accuracy[1], topk_accuracy[1], 
-                bits, alphabet_scalar, percentile, include_0, retain_rate, seed, author
+                mlp_bits, cnn_bits, alphabet_scalar, percentile, include_0, retain_rate, seed, author
             ]
             csv_writer.writerow(row)
