@@ -29,7 +29,9 @@ if __name__ == '__main__':
     include_0 = True
     ignore_layers = []
     retain_rate = 0.25
-    author = 'Yixuan'
+    author = 'Jinjie'
+    seed = 0 
+
     # default_transform is used for all pretrained models and Normalize is mandatory
     # see https://pytorch.org/vision/stable/models.html
     transform = transforms.Compose([
@@ -39,6 +41,7 @@ if __name__ == '__main__':
                         transforms.Normalize(mean=[0.485, 0.456, 0.406],
                                         std=[0.229, 0.224, 0.225])
                         ])
+    np.random.seed(seed)
     
     # NOTE: When using other network, just copy from pytorch website to here.
     # https://pytorch.org/vision/stable/models.html
@@ -47,6 +50,7 @@ if __name__ == '__main__':
         'vgg16': (.71592, .90382),
         'resnet18': (.69758, .89078),
         'googlenet': (.69778, .89530),
+        'resnet50': (.7613, .92862),
     }
 
     params = [(cb, mb, s, bs, per) for cb in cnn_bits_list for mb in mlp_bits_list 
