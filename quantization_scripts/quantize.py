@@ -18,17 +18,17 @@ log_file_name = '../logs/Quantization_Log.csv'
 if __name__ == '__main__':
 
     # hyperparameter section
-    bits_list = [4]
-    scalar_list = [0.975]
-    batch_size_list = [32, 64, 128] # batch_size used for quantization
+    bits_list = [3]
+    scalar_list = [1.81]
+    batch_size_list = [256] # batch_size used for quantization
     percentile_list = [1.0]   # quantile of weight matrix W
     num_workers = 8
     data_set = 'ILSVRC2012'   # 'ILSVRC2012', 'CIFAR10', 'MNIST' 
-    model_name = 'vgg16' # choose models 
+    model_name = 'resnet50' # choose models 
     include_0 = True
     ignore_layers = []
     retain_rate = 0.25
-    author = 'Jinjie'
+    author = 'Yixuan'
     seed = 0 
 
     # default_transform is used for all pretrained models and Normalize is mandatory
