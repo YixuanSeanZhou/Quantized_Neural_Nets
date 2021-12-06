@@ -172,8 +172,7 @@ class StepAlgorithm:
         pool.close()
         quantize_error = np.linalg.norm(analog_layer_input @ W.T  
                             - quantized_layer_input @ Q.T, ord='fro')
-        relative_quantize_error = np.linalg.norm(analog_layer_input @ W.T  
-                                 - quantized_layer_input @ Q.T, ord='fro') / np.linalg.norm(analog_layer_input @ W.T, ord='fro')
+        relative_quantize_error = quantize_error / np.linalg.norm(analog_layer_input @ W.T, ord='fro')
         
         del pool
         gc.collect()

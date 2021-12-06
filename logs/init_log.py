@@ -6,7 +6,7 @@ log_file_name = 'Quantization_Log.csv'
 
 fields = ['Model Name', 'Dataset', 'Quantization Batch Size', 'Original Top1 Accuracy',
           'Quantized Top1 Accuracy', 'Original Top5 Accuracy', 'Quantized Top5 Accuracy', 
-          'MLPBits', 'CNNBits', 'Alphabet_Scalar', 'Percentile',
+          'Bits', 'MLP_Alphabet_Scalar', 'CNN_Alphabet_Scalar', 'MLP_Percentile', 'CNN_Percentile',
           'Include 0', 'Retain_rate', 'Seed', 'Author']
 
 if __name__ == '__main__':
