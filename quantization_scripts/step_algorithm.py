@@ -248,7 +248,7 @@ class StepAlgorithm:
             else: # special case, in which each input channel is convolved with its own filter
 
                 rad = np.quantile(np.abs(W), percentile, axis=1).mean()
-                layer_alphabet = alphabet * rad 
+                layer_alphabet = alphabet * rad * (groups // 16 + 1)
 
                 W_group_shape = Ws[0].shape
 
