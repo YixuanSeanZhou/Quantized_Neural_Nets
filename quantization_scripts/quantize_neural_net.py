@@ -140,6 +140,8 @@ class QuantizeNeuralNet():
         print(f'Layer idx to quantize {layers_to_quantize}')
         print(f'Total num to quantize {len(layers_to_quantize)}')
 
+        counter = 0
+        
         for layer_idx in layers_to_quantize:
             gc.collect()
 
@@ -147,6 +149,8 @@ class QuantizeNeuralNet():
                 = self._populate_linear_layer_input(layer_idx)
 
             print(f'\nQuantizing layer: {layer_idx}')
+            print(f'Quantization progress: {counter} out of {len(layers_to_quantize)}\n')
+            counter += 1
 
             if type(self.analog_network_layers[layer_idx]) == LINEAR_MODULE_TYPE:
 
