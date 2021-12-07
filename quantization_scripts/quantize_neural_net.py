@@ -9,7 +9,9 @@ import torch.nn.functional as F
 import numpy as np
 import copy
 
+import os
 import gc
+import csv
 
 from helper_tools import InterruptException
 from step_algorithm import StepAlgorithm
@@ -24,6 +26,12 @@ SUPPORTED_BLOCK_TYPE = {nn.Sequential,
                         BasicConv2d, Inception, InceptionAux,
                         ConvNormActivation, SqueezeExcitation, MBConv
                         }
+LAYER_LOG_FILE = '../logs/Layer_Quantize_Log.csv'
+fields = [
+    'Layer #', 'Layer Type', 'Group', 'Weight Max', 
+    'Weight Median', 'Weight Row Max Mean', 
+    'Quantization Loss', 'Relative Loss'
+]
 
 class QuantizeNeuralNet():
     '''
@@ -142,6 +150,12 @@ class QuantizeNeuralNet():
 
         counter = 0
         
+        if os.path.isfile(LAYER_LOG_FILE):
+            os.remove(LAYER_LOG_FILE)
+        with open(LAYER_LOG_FILE, 'w') as f:
+            writer = csv.DictWriter(f, fieldnames=fields)
+            writer.writeheader()
+        
         for layer_idx in layers_to_quantize:
             gc.collect()
 
@@ -154,6 +168,7 @@ class QuantizeNeuralNet():
 
             if type(self.analog_network_layers[layer_idx]) == LINEAR_MODULE_TYPE:
 
+                groups = 1
                 # Note that each row of W represents a neuron
                 W = self.analog_network_layers[layer_idx].weight.data.numpy()
 
@@ -199,6 +214,16 @@ class QuantizeNeuralNet():
             print(f'The relative quantization error of layer {layer_idx} is {relative_quantize_error}.\n')
 
             del analog_layer_input, quantized_layer_input
+            
+            with open(LAYER_LOG_FILE, 'a') as f:
+                csv_writer = csv.writer(f)
+                row = [
+                    layer_idx, type(self.analog_network_layers[layer_idx]), groups,
+                    np.max(W), np.median(W), np.quantile(np.abs(W), 1, axis=1).mean(),
+                    quantize_error, relative_quantize_error
+                ]
+                csv_writer.writerow(row)
+            
             gc.collect()
 
         return self.quantized_network
