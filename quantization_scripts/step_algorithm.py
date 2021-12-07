@@ -125,7 +125,7 @@ class StepAlgorithm:
         return neuron_idx, q
 
 
-    def _quantize_layer(W, analog_layer_input, quantized_layer_input, m, 
+    def _quantize_weight(W, analog_layer_input, quantized_layer_input, m, 
                         alphabet, percentile):
         '''
         Quantize one layer in parallel.
@@ -170,15 +170,76 @@ class StepAlgorithm:
             Q[idx, :] = q
 
         pool.close()
-        quantize_error = np.linalg.norm(analog_layer_input @ W.T  
-                            - quantized_layer_input @ Q.T, ord='fro')
-        relative_quantize_error = quantize_error / np.linalg.norm(analog_layer_input @ W.T, ord='fro')
         
         del pool
         gc.collect()
-        return Q, quantize_error, relative_quantize_error
+        return Q
     
+
+    def _quantize_layer(W, analog_layer_input, quantized_layer_input, m, 
+                        alphabet, percentile, groups=1):
+        '''
+        Quantize one layer in parallel.
+        Parameters
+        -----------
+        W : numpy.array
+            The layer to be quantized.
+        analog_layer_input: numpy.array,
+            The input for the layer of analog network.
+        quantized_layer_input: numpy.array,
+            The input for the layer of quantized network.
+        m : int
+            The batch size (num of input).
+        alphabet : numpy.array
+            Scalar numpy array listing the alphabet to perform quantization.
+        percentile: float
+            The percentile to take from each layer.
+        groups: int
+            Num of grouped convolution that is used (only for Conv layers).
+        Returns
+        -------
+        numpy.array
+            The quantized layer.
+        float
+            The quantize error
+        float
+            The relative quantize error.
+        '''
     
+        if groups == 1:
+            Q = StepAlgorithm._quantize_weight(
+                W, analog_layer_input, quantized_layer_input, m,
+                alphabet, percentile
+            )
+
+        else:
+            Ws = W.chunk(groups, 0)
+            
+            print(f'There are in total {groups} group')
+
+            input_len = Ws.shape[-1]
+
+            Qs = []
+            for i in range(groups):
+                print(f'\n Quantize group {i}')
+                Qs.append(StepAlgorithm._quantize_weight(
+                    Ws[i], 
+                    analog_layer_input[:, i * input_len: (i+1) * input_len], 
+                    quantized_layer_input[:, i * input_len: (i+1) * input_len], 
+                    m, alphabet, percentile
+                ))
+
+            Q = torch.vstack(Qs)
+
+        quantize_error = np.linalg.norm(analog_layer_input @ W.T  
+                            - quantized_layer_input @ Q.T, ord='fro')
+        relative_quantize_error = quantize_error / np.linalg.norm(analog_layer_input @ W.T, ord='fro')
+
+
+        
+
+
+
         # SOME MSQ stuffs if we want
         # Q_temp = np.zeros_like(W)
 

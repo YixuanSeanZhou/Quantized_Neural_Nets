@@ -165,6 +165,8 @@ class QuantizeNeuralNet():
 
             elif type(self.analog_network_layers[layer_idx]) == CONV2D_MODULE_TYPE:
 
+                groups = self.analog_network_layers[layer_idx].groups
+
                 W = self.analog_network_layers[layer_idx].weight.data 
                 # W has shape (out_channels, in_channesl, k_size[0], k_size[1])
                 W_shape = W.shape
@@ -177,7 +179,8 @@ class QuantizeNeuralNet():
                                             quantized_layer_input, 
                                             analog_layer_input.shape[0],
                                             self.cnn_alphabet * self.cnn_alphabet_scalar,
-                                            self.cnn_percentile
+                                            self.cnn_percentile,
+                                            groups=groups
                                             )
 
                 self.quantized_network_layers[layer_idx].weight.data = torch.Tensor(Q).float().view(W_shape)
@@ -325,12 +328,6 @@ class SaveInputConv2d:
             raise TypeError('The number of input layer is not equal to one!')
         # module_in has shape (B, C, H, W)
         module_input = module_in[0]
-
-        if self.groups != 1:
-            channel_num = module_input.shape[1] // self.groups
-            height = module_input.shape[2]
-            width = module_input.shape[3]
-            module_input = module_input.view(-1, channel_num, height, width)
 
         # Need to consider both batch_size B and in_channels C
         unfolded = self.unfolder(module_input)  # shape (B, C*kernel_size[0]*kernel_size[1], L)
