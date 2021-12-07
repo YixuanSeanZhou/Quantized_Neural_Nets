@@ -20,9 +20,9 @@ if __name__ == '__main__':
 
     # hyperparameter section
     bits = [5]
-    mlp_scalar_list = [1] 
-    cnn_scalar_list = [1] 
-    batch_size_list = [64] # batch_size used for quantization
+    mlp_scalar_list = [5.0] 
+    cnn_scalar_list = [5.0] 
+    batch_size_list = [128] # batch_size used for quantization
     mlp_percentile_list = [1.0]   # quantile of weight matrix W
     cnn_percentile_list = [1.0]   # quantile of weight matrix W
     num_workers = 8
