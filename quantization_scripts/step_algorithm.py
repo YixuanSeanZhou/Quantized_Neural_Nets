@@ -125,8 +125,8 @@ class StepAlgorithm:
         return neuron_idx, q
 
 
-    def _quantize_weight(W, analog_layer_input, quantized_layer_input, m, 
-                        alphabet, percentile):
+    def _quantize_weight_mtx(W, analog_layer_input, quantized_layer_input, m, 
+                             alphabet, percentile):
         '''
         Quantize one layer in parallel.
         Parameters
@@ -172,6 +172,7 @@ class StepAlgorithm:
         pool.close()
         
         del pool
+
         gc.collect()
         return Q
     
@@ -206,35 +207,87 @@ class StepAlgorithm:
             The relative quantize error.
         '''
     
-        if groups == 1:
-            Q = StepAlgorithm._quantize_weight(
-                W, analog_layer_input, quantized_layer_input, m,
+        if groups == 1: # no group convolution
+            Q = StepAlgorithm._quantize_weight_mtx(
+                W, analog_layer_input, quantized_layer_input, m, 
                 alphabet, percentile
             )
 
+            quantize_error = np.linalg.norm(analog_layer_input @ W.T  
+                            - quantized_layer_input @ Q.T, ord='fro')
+            relative_quantize_error = quantize_error / np.linalg.norm(analog_layer_input @ W.T, ord='fro')
+
         else:
-            Ws = W.chunk(groups, 0)
+            Ws = np.split(W, groups)
             
             print(f'There are in total {groups} group')
-
-            input_len = Ws.shape[-1]
+            input_len = W.shape[-1]
 
             Qs = []
-            for i in range(groups):
-                print(f'\n Quantize group {i}')
-                Qs.append(StepAlgorithm._quantize_weight(
-                    Ws[i], 
-                    analog_layer_input[:, i * input_len: (i+1) * input_len], 
-                    quantized_layer_input[:, i * input_len: (i+1) * input_len], 
-                    m, alphabet, percentile
-                ))
+            analog_outputs = []
+            quantize_outputs = []
+            
+            if W.shape[0] != groups: # general case for group conv
+                                     # quantize group-wise
 
-            Q = torch.vstack(Qs)
+                for i in range(groups):
+                    print(f'Quantize group {i}')
+                    analog_group_input = analog_layer_input[:, i * input_len: (i+1) * input_len]
+                    quantized_group_input = quantized_layer_input[:, i * input_len: (i+1) * input_len]
+                    
+                    Q_group = StepAlgorithm._quantize_weight_mtx(
+                        Ws[i], 
+                        analog_group_input,
+                        quantized_group_input,
+                        m, alphabet, percentile
+                    )
+                    Qs.append(Q_group)
+                    analog_outputs.append(analog_group_input @ Ws[i].T)
+                    quantize_outputs.append(quantized_group_input @ Q_group.T)
+            
+            else: # special case, in which each input channel is convolved with its own filter
 
-        quantize_error = np.linalg.norm(analog_layer_input @ W.T  
-                            - quantized_layer_input @ Q.T, ord='fro')
-        relative_quantize_error = quantize_error / np.linalg.norm(analog_layer_input @ W.T, ord='fro')
+                rad = np.quantile(np.abs(W), percentile, axis=1).mean()
+                layer_alphabet = alphabet * rad 
 
+                W_group_shape = Ws[0].shape
+
+                pool = mp.Pool(mp.cpu_count() - 1)
+
+                results = [pool.apply_async(StepAlgorithm._quantize_neuron, 
+                                            args=(w.reshape(-1), i, analog_layer_input[:, i * input_len: (i+1) * input_len], 
+                                                    quantized_layer_input[:, i * input_len: (i+1) * input_len], 
+                                                    m, layer_alphabet)) 
+                                            for i, w in enumerate(Ws)]
+                # join
+                for i in tqdm(range(len(results))):
+                    idx, Q_group = results[i].get()
+                    
+                    Q_group = Q_group.reshape(W_group_shape)
+                    
+                    Qs.append(Q_group)
+                    
+                    analog_group_input = analog_layer_input[:, i * input_len: (i+1) * input_len]
+                    quantized_group_input = quantized_layer_input[:, i * input_len: (i+1) * input_len]
+
+                    analog_outputs.append(analog_group_input @ Ws[i].T)
+                    quantize_outputs.append(quantized_group_input @ Q_group.T)
+
+                pool.close()
+                
+                del pool
+
+                gc.collect()
+
+            Q = np.vstack(Qs)
+
+            analog_output = np.vstack(analog_outputs)
+            quantize_output = np.vstack(quantize_outputs)
+
+            quantize_error = np.linalg.norm(analog_output - quantize_output, ord='fro')
+            relative_quantize_error = quantize_error / np.linalg.norm(analog_output, ord='fro')
+
+        return Q, quantize_error, relative_quantize_error
 
         
 
