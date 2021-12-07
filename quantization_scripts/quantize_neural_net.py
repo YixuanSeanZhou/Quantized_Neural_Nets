@@ -4,11 +4,14 @@ import torch.nn as nn
 import torchvision
 from torchvision.models.resnet import BasicBlock, Bottleneck
 from torchvision.models.googlenet import BasicConv2d, Inception, InceptionAux
+from torchvision.models.efficientnet import ConvNormActivation, SqueezeExcitation, MBConv 
 import torch.nn.functional as F
 import numpy as np
 import copy
 
+import os
 import gc
+import csv
 
 from helper_tools import InterruptException
 from step_algorithm import StepAlgorithm
@@ -21,7 +24,14 @@ SUPPORTED_LAYER_TYPE = {LINEAR_MODULE_TYPE, CONV2D_MODULE_TYPE}
 SUPPORTED_BLOCK_TYPE = {nn.Sequential, 
                         BasicBlock, Bottleneck,
                         BasicConv2d, Inception, InceptionAux,
+                        ConvNormActivation, SqueezeExcitation, MBConv
                         }
+LAYER_LOG_FILE = '../logs/Layer_Quantize_Log.csv'
+fields = [
+    'Layer #', 'Layer Type', 'Group', 'Weight Max', 
+    'Weight Median', 'Weight Row Max Mean', 
+    'Quantization Loss', 'Relative Loss'
+]
 
 class QuantizeNeuralNet():
     '''
@@ -36,9 +46,12 @@ class QuantizeNeuralNet():
     data_loader: function
         The data_loader to load data
     '''
-    def __init__(self, network_to_quantize, batch_size, data_loader, bits, 
+    def __init__(self, network_to_quantize, batch_size, data_loader, 
+                 mlp_bits, cnn_bits,
                  include_zero = False, ignore_layers=[], 
-                 alphabet_scalar=1, percentile=0.5, retain_rate=0.25):
+                 mlp_alphabet_scalar=1, cnn_alphabet_scalar=1,
+                 mlp_percentile=0.5, cnn_percentile=0.5,
+                 retain_rate=0.25):
         '''
         Init the object that is used for quantizing the given neural net.
         Parameters
@@ -49,18 +62,25 @@ class QuantizeNeuralNet():
             The batch size input to each layer when quantization is performed.
         data_loader: function,
             The generator that loads the raw dataset
-        bits : int
-            Num of bits that alphabet is used.
+        mlp_bits : int
+            Num of bits that mlp alphabet is used.
+        cnn_bits: int
+            Num of bits that cnn alphabet is used.
         include_zero: bool
             Indicate whether to augment the alphabet with a 0.
         ignore_layers : List[int]
             List of layer index that shouldn't be quantized.
-        alphabet_scaler: float,
+        mlp_alphabet_scaler: float,
             The alphabet_scaler used to determine the radius \
-            of the alphabet for each layer.
-        percentile: float,
-            The percentile to use for finding each layer's alphabet.
-        retain_rate: float,
+            of the alphabet for each mlp layer.
+        cnn_alphabet_scaler: float,
+            The alphabet_scaler used to determine the radius \
+            of the alphabet for each cnn layer.
+        mlp_percentile: float,
+            The percentile to use for finding each mlp layer's alphabet.
+        cnn_percentile: float,
+            The percentile to use for finding each cnn layer's alphabet.
+        retain_rate: float:
             The ratio to retain after unfold.
         Returns
         -------
@@ -71,12 +91,19 @@ class QuantizeNeuralNet():
         self.batch_size = batch_size
         self.data_loader_iter = iter(data_loader)
 
-        self.alphabet_scalar = alphabet_scalar
-        self.bits = bits
-        self.alphabet = np.linspace(-1, 1, num=int(2 ** bits)) 
+        self.mlp_alphabet_scalar = mlp_alphabet_scalar
+        self.cnn_alphabet_scalar = cnn_alphabet_scalar
+
+        self.mlp_bits = mlp_bits
+        self.cnn_bits = cnn_bits
+        self.mlp_alphabet = np.linspace(-1, 1, num=int(2 ** mlp_bits))
+        self.cnn_alphabet = np.linspace(-1, 1, num=int(2 ** cnn_bits))
         if include_zero:
-            self.alphabet = np.append(self.alphabet, 0)
-        self.percentile = percentile
+            self.mlp_alphabet = np.append(self.mlp_alphabet, 0)
+            self.cnn_alphabet = np.append(self.cnn_alphabet, 0)
+        
+        self.mlp_percentile = mlp_percentile
+        self.cnn_percentile = cnn_percentile
 
         self.ignore_layers = ignore_layers
         self.retain_rate = retain_rate
@@ -119,7 +146,16 @@ class QuantizeNeuralNet():
                 ]
         
         print(f'Layer idx to quantize {layers_to_quantize}')
+        print(f'Total num to quantize {len(layers_to_quantize)}')
 
+        counter = 0
+        
+        if os.path.isfile(LAYER_LOG_FILE):
+            os.remove(LAYER_LOG_FILE)
+        with open(LAYER_LOG_FILE, 'w') as f:
+            writer = csv.DictWriter(f, fieldnames=fields)
+            writer.writeheader()
+        
         for layer_idx in layers_to_quantize:
             gc.collect()
 
@@ -127,9 +163,12 @@ class QuantizeNeuralNet():
                 = self._populate_linear_layer_input(layer_idx)
 
             print(f'\nQuantizing layer: {layer_idx}')
+            print(f'Quantization progress: {counter} out of {len(layers_to_quantize)}\n')
+            counter += 1
 
             if type(self.analog_network_layers[layer_idx]) == LINEAR_MODULE_TYPE:
 
+                groups = 1
                 # Note that each row of W represents a neuron
                 W = self.analog_network_layers[layer_idx].weight.data.numpy()
 
@@ -137,13 +176,15 @@ class QuantizeNeuralNet():
                                                 analog_layer_input, 
                                                 quantized_layer_input, 
                                                 analog_layer_input.shape[0],
-                                                self.alphabet * self.alphabet_scalar, 
-                                                self.percentile
+                                                self.mlp_alphabet * self.mlp_alphabet_scalar, 
+                                                self.mlp_percentile
                                                 )
 
                 self.quantized_network_layers[layer_idx].weight.data = torch.Tensor(Q).float()
 
             elif type(self.analog_network_layers[layer_idx]) == CONV2D_MODULE_TYPE:
+
+                groups = self.analog_network_layers[layer_idx].groups
 
                 W = self.analog_network_layers[layer_idx].weight.data 
                 # W has shape (out_channels, in_channesl, k_size[0], k_size[1])
@@ -151,13 +192,14 @@ class QuantizeNeuralNet():
                 
                 W = W.view(W.size(0), -1).numpy() # shape (out_channels, in_channesl*k_size[0]*k_size[1])
                 # each row of W is a neuron (vectorized sliding block)
-                
+
                 Q, quantize_error, relative_quantize_error = StepAlgorithm._quantize_layer(W, 
                                             analog_layer_input, 
                                             quantized_layer_input, 
                                             analog_layer_input.shape[0],
-                                            self.alphabet * self.alphabet_scalar,
-                                            self.percentile
+                                            self.cnn_alphabet * self.cnn_alphabet_scalar,
+                                            self.cnn_percentile,
+                                            groups=groups
                                             )
 
                 self.quantized_network_layers[layer_idx].weight.data = torch.Tensor(Q).float().view(W_shape)
@@ -166,12 +208,22 @@ class QuantizeNeuralNet():
             print(f'Shape of X is {analog_layer_input.shape}')
             print(f'Median of W is {np.quantile(np.abs(W), 0.5, axis=1).mean()}')
             print(f'75q of W is {np.quantile(np.abs(W), 0.75, axis=1).mean()}')
-            print(f'The {round(self.percentile, 2)} percentile of W is {np.quantile(np.abs(W), self.percentile, axis=1).mean()}')
+            #  print(f'The {round(self.percentile, 2)} percentile of W is {np.quantile(np.abs(W), self.percentile, axis=1).mean()}')
             print(f'Max of W is {np.quantile(np.abs(W), 1, axis=1).mean()}')
             print(f'The quantization error of layer {layer_idx} is {quantize_error}.')
             print(f'The relative quantization error of layer {layer_idx} is {relative_quantize_error}.\n')
 
             del analog_layer_input, quantized_layer_input
+            
+            with open(LAYER_LOG_FILE, 'a') as f:
+                csv_writer = csv.writer(f)
+                row = [
+                    layer_idx, type(self.analog_network_layers[layer_idx]), groups,
+                    np.max(W), np.median(W), np.quantile(np.abs(W), 1, axis=1).mean(),
+                    quantize_error, relative_quantize_error
+                ]
+                csv_writer.writerow(row)
+            
             gc.collect()
 
         return self.quantized_network
@@ -207,6 +259,7 @@ class QuantizeNeuralNet():
                 dilation=analog_layer.dilation,
                 padding=analog_layer.padding,
                 stride=analog_layer.stride,
+                groups=analog_layer.groups,
                 retain_rate=self.retain_rate
             )
         else:
@@ -243,13 +296,29 @@ class SaveInputMLP:
     """
     def __init__(self):
         self.inputs = []
-        
+        # self.batch_size = batch_size
+        # self.p = 0.125
+        # self.call_count = 0
+        # self.rand_indices = []
 
     def __call__(self, module, module_in, module_out):
         if len(module_in) != 1:
             raise TypeError('The number of input layer is not equal to one!')
+    
         self.inputs.append(module_in[0].numpy())
         raise InterruptException
+
+        # batch_size = module_in[0].shape[0]
+
+        # if self.call_count == 0:
+        #     self.rand_indices = np.random.choice(np.arange(0, batch_size), size=int(self.p*batch_size + 1 if self.p != 1 else batch_size)) 
+        # self.call_count += 1
+        
+        # module_in_numpy = module_in[0].numpy()
+
+        # self.inputs.append(module_in_numpy[self.rand_indices])
+        
+        # raise InterruptException
 
 
 class SaveInputConv2d:
@@ -257,7 +326,7 @@ class SaveInputConv2d:
     This class is useed to store inputs from original/quantizeed neural netwroks
     for conv layers.
     '''
-    def __init__(self, kernel_size, dilation, padding, stride, retain_rate):
+    def __init__(self, kernel_size, dilation, padding, stride, groups, retain_rate):
         '''
         Init the SaveInputConv2d object
         
@@ -271,6 +340,8 @@ class SaveInputConv2d:
             The padding used of the conv2d layer who takes the input
         stride: int or tuple
             The stride of of the conv2d layer who takes the input
+        groups: int
+            The groups in the conv2d layer
         retain_rate: float
             The ratio to retain after unfold.
         '''
@@ -278,17 +349,22 @@ class SaveInputConv2d:
         self.unfolder = nn.Unfold(kernel_size, dilation, padding, kernel_size)
         self.inputs = []
         self.call_count = 0
-        
+        self.groups = groups
+
 
     def __call__(self, module, module_in, module_out):
         if len(module_in) != 1:
             raise TypeError('The number of input layer is not equal to one!')
-        # module_in has shape (B, C, H, W) 
+        # module_in has shape (B, C, H, W)
+        module_input = module_in[0]
+
         # Need to consider both batch_size B and in_channels C
-        unfolded = self.unfolder(module_in[0])  # shape (B, C*kernel_size[0]*kernel_size[1], L)
+        unfolded = self.unfolder(module_input)  # shape (B, C*kernel_size[0]*kernel_size[1], L)
+        
         batch_size, num_blocks = unfolded.shape[0], unfolded.shape[-1]
         unfolded = torch.transpose(unfolded, 1, 2) # shape (B, L, C*kernel_size[0]*kernel_size[1])
         unfolded = unfolded.reshape(-1, unfolded.size(-1)).numpy() # shape (B*L, C*kernel_size[0]*kernel_size[1])
+
         if self.call_count == 0:
             self.rand_indices = np.concatenate(
                         [np.random.choice(np.arange(num_blocks*i, num_blocks*(i+1)), 
@@ -297,6 +373,7 @@ class SaveInputConv2d:
                         ) # need to define self.p (probability)
         self.call_count += 1
         unfolded = unfolded[self.rand_indices]
+
         self.inputs.append(unfolded)
         raise InterruptException
         
