@@ -232,8 +232,8 @@ class StepAlgorithm:
 
                 for i in range(groups):
                     print(f'Quantize group {i}')
-                    analog_group_input = analog_layer_input[:, i * input_len: (i+1) * input_len]
-                    quantized_group_input = quantized_layer_input[:, i * input_len: (i+1) * input_len]
+                    analog_group_input = analog_layer_input[i]
+                    quantized_group_input = quantized_layer_input[i]
                     
                     Q_group = StepAlgorithm._quantize_weight_mtx(
                         Ws[i], 
@@ -248,15 +248,15 @@ class StepAlgorithm:
             else: # special case, in which each input channel is convolved with its own filter
 
                 rad = np.quantile(np.abs(W), percentile, axis=1).mean()
-                layer_alphabet = alphabet * rad * (groups // 16 + 1)
+                layer_alphabet = alphabet * rad 
 
                 W_group_shape = Ws[0].shape
 
                 pool = mp.Pool(mp.cpu_count() - 1)
 
                 results = [pool.apply_async(StepAlgorithm._quantize_neuron, 
-                                            args=(w.reshape(-1), i, analog_layer_input[:, i * input_len: (i+1) * input_len], 
-                                                    quantized_layer_input[:, i * input_len: (i+1) * input_len], 
+                                            args=(w.reshape(-1), i, analog_layer_input[i], 
+                                                    quantized_layer_input[i], 
                                                     m, layer_alphabet)) 
                                             for i, w in enumerate(Ws)]
                 # join
@@ -267,8 +267,8 @@ class StepAlgorithm:
                     
                     Qs.append(Q_group)
                     
-                    analog_group_input = analog_layer_input[:, i * input_len: (i+1) * input_len]
-                    quantized_group_input = quantized_layer_input[:, i * input_len: (i+1) * input_len]
+                    analog_group_input = analog_layer_input[i]
+                    quantized_group_input = quantized_layer_input[i]
 
                     analog_outputs.append(analog_group_input @ Ws[i].T)
                     quantize_outputs.append(quantized_group_input @ Q_group.T)

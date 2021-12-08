@@ -1,1 +1,5 @@
 Layer #,Layer Type,Group,Weight Max,Weight Median,Weight Row Max Mean,Quantization Loss,Relative Loss
+0,<class 'torch.nn.modules.conv.Conv2d'>,1,2.2204733,-0.0033274733,1.0916243,319.19763,0.045055073
+3,<class 'torch.nn.modules.conv.Conv2d'>,32,3.4414508,0.007461028,1.4919105,585.695293352635,0.11485933639447023
+7,<class 'torch.nn.modules.conv.Conv2d'>,1,0.6216179,-0.0070520556,0.5237373,2.6445947,0.04630985
+8,<class 'torch.nn.modules.conv.Conv2d'>,1,0.624367,0.07067945,0.34675616,3.6028812,0.05242135
