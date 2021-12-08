@@ -203,7 +203,7 @@ class QuantizeNeuralNet():
                                             analog_layer_input, 
                                             quantized_layer_input, 
                                             m,
-                                            self.cnn_alphabet * self.cnn_alphabet_scalar * max(groups // 32, 1),
+                                            self.cnn_alphabet * self.cnn_alphabet_scalar, #* max(groups // 32, 1),
                                             self.cnn_percentile,
                                             groups=groups
                                             )
