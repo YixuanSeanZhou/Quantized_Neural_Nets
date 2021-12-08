@@ -27,7 +27,7 @@ if __name__ == '__main__':
     cnn_percentile_list = [1.0]   # quantile of weight matrix W
     num_workers = 8
     data_set = 'ILSVRC2012'   # 'ILSVRC2012', 'CIFAR10', 'MNIST' 
-    model_name = 'efficientnet_b7' # choose models 
+    model_name = 'efficientnet_b1' # choose models 
     include_0 = True
     ignore_layers = []
     retain_rate = 0.25

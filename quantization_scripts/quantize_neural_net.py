@@ -187,10 +187,11 @@ class QuantizeNeuralNet():
                 groups = self.analog_network_layers[layer_idx].groups
 
                 W = self.analog_network_layers[layer_idx].weight.data 
-                # W has shape (out_channels, in_channesl, k_size[0], k_size[1])
+                # W has shape (out_channels, in_channesl/groups, k_size[0], k_size[1])
                 W_shape = W.shape
                 
-                W = W.view(W.size(0), -1).numpy() # shape (out_channels, in_channesl*k_size[0]*k_size[1])
+                W = W.view(W.size(0), -1).numpy() 
+                # shape (out_channels, in_channesl/groups*k_size[0]*k_size[1])
                 # each row of W is a neuron (vectorized sliding block)
 
                 Q, quantize_error, relative_quantize_error = StepAlgorithm._quantize_layer(W, 
