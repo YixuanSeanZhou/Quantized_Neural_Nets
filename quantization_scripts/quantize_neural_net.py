@@ -159,6 +159,7 @@ class QuantizeNeuralNet():
                 writer.writeheader()
         
         for layer_idx in layers_to_quantize:
+  
             gc.collect()
 
             analog_layer_input, quantized_layer_input \
