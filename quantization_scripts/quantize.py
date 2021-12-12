@@ -20,9 +20,9 @@ if __name__ == '__main__':
 
     # hyperparameter section
     bits = [5]
-    mlp_scalar_list = [1.5] 
-    cnn_scalar_list = [1.0] 
-    batch_size_list = [128] # batch_size used for quantization
+    mlp_scalar_list = [1.6] 
+    cnn_scalar_list = [1.6] 
+    batch_size_list = [256] # batch_size used for quantization
     mlp_percentile_list = [1.0]   # quantile of weight matrix W
     cnn_percentile_list = [1.0]   # quantile of weight matrix W
     num_workers = 8
@@ -53,6 +53,7 @@ if __name__ == '__main__':
         'resnet18': (.69758, .89078),
         'googlenet': (.69778, .89530),
         'resnet50': (.7613, .92862),
+        'efficientnet_b1': (.7761, .93596),
         'efficientnet_b7': (.84122, .96908)
     }
 

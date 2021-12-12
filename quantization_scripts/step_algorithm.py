@@ -125,56 +125,64 @@ class StepAlgorithm:
         return neuron_idx, q
 
 
-    def _quantize_weight_mtx(W, analog_layer_input, quantized_layer_input, m, 
-                             alphabet, percentile):
-        '''
-        Quantize one layer in parallel.
-        Parameters
-        -----------
-        W : numpy.array
-            The layer to be quantized.
-        analog_layer_input: numpy.array,
-            The input for the layer of analog network.
-        quantized_layer_input: numpy.array,
-            The input for the layer of quantized network.
-        m : int
-            The batch size (num of input).
-        alphabet : numpy.array
-            Scalar numpy array listing the alphabet to perform quantization.
-        percentile: float
-            The percentile to take from each layer.
-        Returns
-        -------
-        numpy.array
-            The quantized layer.
-        '''
-        # Start quantize 
-        pool = mp.Pool(mp.cpu_count() - 1)
+    # def _quantize_weight_mtx(W, analog_layer_input, quantized_layer_input, m, 
+    #                          alphabet, percentile, rad, surpress=False):
+    #     '''
+    #     Quantize one layer in parallel.
+    #     Parameters
+    #     -----------
+    #     W : numpy.array
+    #         The layer to be quantized.
+    #     analog_layer_input: numpy.array,
+    #         The input for the layer of analog network.
+    #     quantized_layer_input: numpy.array,
+    #         The input for the layer of quantized network.
+    #     m : int
+    #         The batch size (num of input).
+    #     alphabet : numpy.array
+    #         Scalar numpy array listing the alphabet to perform quantization.
+    #     percentile: float
+    #         The percentile to take from each layer.
+    #     rad: float
+    #         The radius of the alphabet for this layer.
+    #     surpress: bool
+    #         Whether or not to surpress the tqdm.
+    #     Returns
+    #     -------
+    #     numpy.array
+    #         The quantized layer.
+    #     '''
+    #     # Start quantize 
+    #     pool = mp.Pool(mp.cpu_count() - 1)
 
-        # FIXME: This defeats the purpose, partially
-        # May move the layer_alphabet to quantize_neural_net.py
-        # rad = np.median(np.abs(W))  # radius
+    #     # FIXME: This defeats the purpose, partially
+    #     # May move the layer_alphabet to quantize_neural_net.py
+    #     # rad = np.median(np.abs(W))  # radius
         
-        rad = np.quantile(np.abs(W), percentile, axis=1).mean()
-        layer_alphabet = alphabet * rad 
+    #     layer_alphabet = alphabet * rad 
 
-        Q = np.zeros_like(W)
-        results = [pool.apply_async(StepAlgorithm._quantize_neuron, 
-                                    args=(w, i, analog_layer_input, 
-                                          quantized_layer_input, m,
-                                          layer_alphabet)) 
-                                    for i, w in enumerate(W)]
-        # join
-        for i in tqdm(range(Q.shape[0])):
-            idx, q = results[i].get()
-            Q[idx, :] = q
+    #     Q = np.zeros_like(W)
+    #     results = [pool.apply_async(StepAlgorithm._quantize_neuron, 
+    #                                 args=(w, i, analog_layer_input, 
+    #                                       quantized_layer_input, m,
+    #                                       layer_alphabet)) 
+    #                                 for i, w in enumerate(W)]
+    #     # join
+    #     if surpress:
+    #         for i in range(Q.shape[0]):
+    #             idx, q = results[i].get()
+    #             Q[idx, :] = q
+    #     else:
+    #         for i in tqdm(range(Q.shape[0])):
+    #             idx, q = results[i].get()
+    #             Q[idx, :] = q
 
-        pool.close()
+    #     pool.close()
         
-        del pool
+    #     del pool
 
-        gc.collect()
-        return Q
+    #     gc.collect()
+    #     return Q
     
 
     def _quantize_layer(W, analog_layer_input, quantized_layer_input, m, 
@@ -206,19 +214,30 @@ class StepAlgorithm:
         float
             The relative quantize error.
         '''
-    
+        pool = mp.Pool(mp.cpu_count() - 1)
+        
+        rad = np.quantile(np.abs(W), percentile, axis=1).mean()
+        layer_alphabet = alphabet * rad 
+
+        Q = np.zeros_like(W)
+        
         if groups == 1: # no group convolution
-            Q = StepAlgorithm._quantize_weight_mtx(
-                W, analog_layer_input, quantized_layer_input, m, 
-                alphabet, percentile
-            )
+            results = [pool.apply_async(StepAlgorithm._quantize_neuron, 
+                                        args=(w, idx, analog_layer_input, 
+                                            quantized_layer_input, m,
+                                            layer_alphabet)) 
+                                        for idx, w in enumerate(W)]
+            # join
+            for i in tqdm(range(Q.shape[0])):
+                idx, q = results[i].get()
+                Q[idx, :] = q
 
             quantize_error = np.linalg.norm(analog_layer_input @ W.T  
                             - quantized_layer_input @ Q.T, ord='fro')
             relative_quantize_error = quantize_error / np.linalg.norm(analog_layer_input @ W.T, ord='fro')
 
         else:
-            Q = np.zeros_like(W) # shape (out_channels, in_channels/groups*k_size[0]*k_size[1])
+            # Q = np.zeros_like(W) # shape (out_channels, in_channels/groups*k_size[0]*k_size[1])
             W = W.reshape(groups, -1, W.shape[-1]) 
             Q = Q.reshape(groups, -1, Q.shape[-1]) 
             #  shape (groups, out_channels/groups, in_channesl/groups*k_size[0]*k_size[1])
@@ -229,20 +248,58 @@ class StepAlgorithm:
 
             analog_output_norms = []
             quantize_error = 0
+
+            results = []
+
             for i in range(groups):
-                # note that m = B*L = analog_layer_input[:,i,:].shape[0]
-                Q[i] = StepAlgorithm._quantize_weight_mtx(
-                    W[i], analog_layer_input[:,i,:], quantized_layer_input[:,i,:], m,
-                    alphabet, percentile
-                ) 
+                group_results = [pool.apply_async(StepAlgorithm._quantize_neuron, 
+                                                  args=(w, idx, 
+                                                        analog_layer_input[:,i,:], 
+                                                        quantized_layer_input[:,i,:], 
+                                                        m, layer_alphabet)) 
+                                                    for idx, w in enumerate(W[i])]
+                results.append(group_results)
+
+            for i in tqdm(range(groups)):
+                for j in range(W[i].shape[0]):
+                    # Linear way
+                    # idx, q = StepAlgorithm._quantize_neuron(w, idx, 
+                    #                     analog_layer_input, 
+                    #                     quantized_layer_input, m,
+                    #                     layer_alphabet)
+                    idx, q = results[i][j].get()
+                    Q[i, idx] = q
                 analog_output = analog_layer_input[:,i,:] @ W[i].T
                 quantize_output = quantized_layer_input[:,i,:] @ Q[i].T
                 quantize_error += np.linalg.norm(analog_output - quantize_output, ord='fro') ** 2
                 analog_output_norms.append(np.linalg.norm(analog_output, ord='fro')**2)
+
+            # TODO: refactor this into another layer of multi-processing if needed
+            # for i in tqdm(range(groups)):
+            #     # note that m = B*L = analog_layer_input[:,i,:].shape[0]
+            #     Q[i] = StepAlgorithm._quantize_weight_mtx(
+            #         W[i], analog_layer_input[:,i,:], quantized_layer_input[:,i,:], m,
+            #         alphabet, percentile, rad,
+            #         surpress=True
+            #     )
+            #     analog_output = analog_layer_input[:,i,:] @ W[i].T
+            #     quantize_output = quantized_layer_input[:,i,:] @ Q[i].T
+            #     quantize_error += np.linalg.norm(analog_output - quantize_output, ord='fro') ** 2
+            #     analog_output_norms.append(np.linalg.norm(analog_output, ord='fro')**2)
+            
             relative_quantize_error = np.sqrt(quantize_error / np.array(analog_output_norms).sum())
             quantize_error = np.sqrt(quantize_error)
             
             
+        pool.close()    
+        
+        del pool
+
+        gc.collect()
+        return Q, quantize_error, relative_quantize_error
+
+
+            # old code for else
             # Ws = np.split(W, groups)
             
             # print(f'There are in total {groups} group')
@@ -312,7 +369,7 @@ class StepAlgorithm:
             # quantize_error = np.linalg.norm(analog_output - quantize_output, ord='fro')
             # relative_quantize_error = quantize_error / np.linalg.norm(analog_output, ord='fro')
 
-        return Q, quantize_error, relative_quantize_error
+       
 
         
 
