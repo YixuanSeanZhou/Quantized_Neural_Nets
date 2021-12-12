@@ -20,14 +20,15 @@ if __name__ == '__main__':
 
     # hyperparameter section
     bits = [5]
+    scalar_list = [2.5, 2.6, 2.7, 2.8, 2.9, 3]
     mlp_scalar_list = [1.6] 
     cnn_scalar_list = [1.6] 
-    batch_size_list = [256] # batch_size used for quantization
+    batch_size_list = [128] # batch_size used for quantization
     mlp_percentile_list = [1.0]   # quantile of weight matrix W
     cnn_percentile_list = [1.0]   # quantile of weight matrix W
     num_workers = 8
     data_set = 'ILSVRC2012'   # 'ILSVRC2012', 'CIFAR10', 'MNIST' 
-    model_name = 'efficientnet_b1' # choose models 
+    model_name = 'efficientnet_b7' # choose models 
     include_0 = True
     ignore_layers = []
     retain_rate = 0.25
@@ -57,10 +58,9 @@ if __name__ == '__main__':
         'efficientnet_b7': (.84122, .96908)
     }
 
-    params = [(b, mlp_s, cnn_s, bs, mlp_per, cnn_per) 
+    params = [(b, s, s, bs, mlp_per, cnn_per) 
                               for b in bits
-                              for mlp_s in mlp_scalar_list 
-                              for cnn_s in cnn_scalar_list
+                              for s in scalar_list
                               for bs in batch_size_list
                               for mlp_per in mlp_percentile_list
                               for cnn_per in cnn_percentile_list
