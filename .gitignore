@@ -130,6 +130,7 @@ dmypy.json
 
 # experimental_place
 experimental_place/
+experimental_place/*.ipynb
 experimental_place/*
 experimental_place/data/*
 models/*
@@ -139,3 +140,5 @@ quantization_scripts/test.ipynb
 *.DS_Store
 data/*
 quantization_scripts/cache_data/*
+experiemntal_place/Experiment_kernel.ipynb
+.gitignore
