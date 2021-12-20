@@ -55,7 +55,8 @@ if __name__ == '__main__':
         'googlenet': (.69778, .89530),
         'resnet50': (.7613, .92862),
         'efficientnet_b1': (.7761, .93596),
-        'efficientnet_b7': (.84122, .96908)
+        'efficientnet_b7': (.84122, .96908),
+        'mobilenet_v2': (.71878, 0.90286)
     }
 
     params = [(b, s, s, bs, mlp_per, cnn_per) 
