@@ -5,6 +5,7 @@ import torchvision
 from torchvision.models.resnet import BasicBlock, Bottleneck
 from torchvision.models.googlenet import BasicConv2d, Inception, InceptionAux
 from torchvision.models.efficientnet import ConvNormActivation, SqueezeExcitation, MBConv 
+from torchvision.models.mobilenetv2 import InvertedResidual
 import torch.nn.functional as F
 import numpy as np
 import copy
@@ -24,7 +25,8 @@ SUPPORTED_LAYER_TYPE = {LINEAR_MODULE_TYPE, CONV2D_MODULE_TYPE}
 SUPPORTED_BLOCK_TYPE = {nn.Sequential, 
                         BasicBlock, Bottleneck,
                         BasicConv2d, Inception, InceptionAux,
-                        ConvNormActivation, SqueezeExcitation, MBConv
+                        ConvNormActivation, SqueezeExcitation, MBConv,
+                        InvertedResidual
                         }
 LAYER_LOG_FILE = '../logs/Layer_Quantize_Log.csv'
 fields = [
