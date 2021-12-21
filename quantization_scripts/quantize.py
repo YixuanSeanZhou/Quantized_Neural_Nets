@@ -7,6 +7,7 @@ import torchvision
 import numpy as np
 import os
 import csv
+import gc
 from datetime import datetime, timedelta
 
 from quantize_neural_net import QuantizeNeuralNet
@@ -20,15 +21,16 @@ if __name__ == '__main__':
 
     # hyperparameter section
     bits = [5]
-    scalar_list = [2.5, 2.6, 2.7, 2.8, 2.9, 3]
+    scalar_list = [1.77]
     mlp_scalar_list = [1.6] 
     cnn_scalar_list = [1.6] 
-    batch_size_list = [128] # batch_size used for quantization
+    batch_size_list = [2048]
+            # 1024, 512, 256, 128, 64, 32] # batch_size used for quantization
     mlp_percentile_list = [1.0]   # quantile of weight matrix W
     cnn_percentile_list = [1.0]   # quantile of weight matrix W
     num_workers = 8
     data_set = 'ILSVRC2012'   # 'ILSVRC2012', 'CIFAR10', 'MNIST' 
-    model_name = 'efficientnet_b7' # choose models 
+    model_name = 'mobilenet_v2' # choose models 
     include_0 = True
     ignore_layers = []
     retain_rate = 0.25
@@ -56,7 +58,7 @@ if __name__ == '__main__':
         'resnet50': (.7613, .92862),
         'efficientnet_b1': (.7761, .93596),
         'efficientnet_b7': (.84122, .96908),
-        'mobilenet_v2': (.71878, 0.90286)
+        'mobilenet_v2': (.71878, .90286)
     }
 
     params = [(b, s, s, bs, mlp_per, cnn_per) 
@@ -81,7 +83,7 @@ if __name__ == '__main__':
         # TODO: update the quantize_class
 
         np.random.seed(seed)
-        
+
         # load the model to be quantized from PyTorch resource
         model = getattr(torchvision.models, model_name)(pretrained=True) 
         model.eval()  # eval() is necessary 
@@ -128,6 +130,9 @@ if __name__ == '__main__':
             print(f'\nEvaluting the original model to get its accuracy\n')
             original_topk_accuracy = test_accuracy(model, test_loader, topk)
         
+        del quantizer
+        gc.collect()
+
         print(f'Top-1 accuracy of {model_name} is {original_topk_accuracy[0]}.')
         print(f'Top-5 accuracy of {model_name} is {original_topk_accuracy[1]}.')
         

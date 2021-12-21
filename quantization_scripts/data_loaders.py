@@ -63,7 +63,7 @@ def data_loader(ds_name, batch_size, transform, num_workers):
         test_ds = Imagenet(data_dir, transform) 
         train_dl = DataLoader(train_ds, batch_size, shuffle=True, num_workers=num_workers,
                                 worker_init_fn=seed_worker, generator=g)
-        test_dl = DataLoader(test_ds, batch_size, shuffle=False,
+        test_dl = DataLoader(test_ds, min(batch_size, 1024), shuffle=False,
                                 num_workers=num_workers) 
 
     else:
@@ -78,6 +78,6 @@ def data_loader(ds_name, batch_size, transform, num_workers):
                                     
         train_dl = DataLoader(train_ds, batch_size, shuffle=True, num_workers=num_workers,
                                 worker_init_fn=seed_worker, generator=g)
-        test_dl = DataLoader(test_ds, batch_size, shuffle=False,
+        test_dl = DataLoader(test_ds, min(batch_size, 1024), shuffle=False,
                                 num_workers=num_workers)             
     return train_dl, test_dl 

@@ -129,6 +129,8 @@ dmypy.json
 .pyre/
 
 # experimental_place
+experimental_place/
+experimental_place/*.ipynb
 experimental_place/*
 experimental_place/data/*
 models/*

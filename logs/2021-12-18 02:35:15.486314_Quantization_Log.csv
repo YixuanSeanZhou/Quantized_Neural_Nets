@@ -1,0 +1,10 @@
+Model Name,Dataset,Quantization Batch Size,Original Top1 Accuracy,Quantized Top1 Accuracy,Original Top5 Accuracy,Quantized Top5 Accuracy,Bits,MLP_Alphabet_Scalar,CNN_Alphabet_Scalar,MLP_Percentile,CNN_Percentile,Include 0,Retain_rate,Seed,Author
+efficientnet_b1,ILSVRC2012,1024,0.7761,0.76304,0.93596,0.9298,5,1.6,1.6,1.0,1.0,True,0.25,0,Yixuan
+efficientnet_b1,ILSVRC2012,32,0.7761,0.02338,0.93596,0.06616,5,1.6,1.6,1.0,1.0,True,0.25,0,Yixuan
+efficientnet_b1,ILSVRC2012,64,0.7761,0.48672,0.93596,0.72292,5,1.6,1.6,1.0,1.0,True,0.25,0,Yixuan
+efficientnet_b1,ILSVRC2012,128,0.7761,0.7181,0.93596,0.90052,5,1.6,1.6,1.0,1.0,True,0.25,0,Yixuan
+efficientnet_b1,ILSVRC2012,256,0.7761,0.74488,0.93596,0.9179,5,1.6,1.6,1.0,1.0,True,0.25,0,Yixuan
+efficientnet_b1,ILSVRC2012,1024,0.7761,0.73106,0.93596,0.91234,4,1.6,1.6,1.0,1.0,True,0.25,0,Yixuan
+efficientnet_b1,ILSVRC2012,512,0.7761,0.70982,0.93596,0.89778,4,1.6,1.6,1.0,1.0,True,0.25,0,Yixuan
+efficientnet_b1,ILSVRC2012,1024,0.7761,0.76852,0.93596,0.93204,6,1.6,1.6,1.0,1.0,True,0.25,0,Yixuan
+efficientnet_b1,ILSVRC2012,512,0.7761,0.76564,0.93596,0.93118,6,1.6,1.6,1.0,1.0,True,0.25,0,Yixuan
