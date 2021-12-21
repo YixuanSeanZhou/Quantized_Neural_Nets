@@ -20,16 +20,17 @@ log_file_name = '../logs/Quantization_Log.csv'
 if __name__ == '__main__':
 
     # hyperparameter section
-    bits = [4, 5]
-    scalar_list = [1.41]
+    bits = [5]
+    scalar_list = [1.77]
     mlp_scalar_list = [1.6] 
     cnn_scalar_list = [1.6] 
-    batch_size_list = [4096] # batch_size used for quantization
+    batch_size_list = [2048]
+            # 1024, 512, 256, 128, 64, 32] # batch_size used for quantization
     mlp_percentile_list = [1.0]   # quantile of weight matrix W
     cnn_percentile_list = [1.0]   # quantile of weight matrix W
     num_workers = 8
     data_set = 'ILSVRC2012'   # 'ILSVRC2012', 'CIFAR10', 'MNIST' 
-    model_name = 'googlenet' # choose models 
+    model_name = 'mobilenet_v2' # choose models 
     include_0 = True
     ignore_layers = []
     retain_rate = 0.25
@@ -56,7 +57,8 @@ if __name__ == '__main__':
         'googlenet': (.69778, .89530),
         'resnet50': (.7613, .92862),
         'efficientnet_b1': (.7761, .93596),
-        'efficientnet_b7': (.84122, .96908)
+        'efficientnet_b7': (.84122, .96908),
+        'mobilenet_v2': (.71878, .90286)
     }
 
     params = [(b, s, s, bs, mlp_per, cnn_per) 
