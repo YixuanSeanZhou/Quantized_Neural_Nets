@@ -242,17 +242,18 @@ class StepAlgorithm:
             
             # bias correction
             
-            b_q = StepAlgorithm.bias_correction(analog_layer_input, 
-                                                quantized_layer_input, 
-                                                W, Q, b, m)
-            
-            uncorrected_layer_error = np.linalg.norm(analog_layer_input @ W.T + b 
-                            - quantized_layer_input @ Q.T + b, ord='fro')
-            corrected_layer_error = np.linalg.norm(analog_layer_input @ W.T + b 
-                            - quantized_layer_input @ Q.T + b_q, ord='fro')
-            
-            print(f'Uncorrected Quantize Error: {uncorrected_layer_error}')
-            print(f'Corrected Quantize Error: {corrected_layer_error}')
+            if b is not None:
+                b_q = StepAlgorithm.bias_correction(analog_layer_input, 
+                                                    quantized_layer_input, 
+                                                    W, Q, b, m)
+                
+                uncorrected_layer_error = np.linalg.norm(analog_layer_input @ W.T + b 
+                                - quantized_layer_input @ Q.T + b, ord='fro')
+                corrected_layer_error = np.linalg.norm(analog_layer_input @ W.T + b 
+                                - quantized_layer_input @ Q.T + b_q, ord='fro')
+                
+                print(f'Uncorrected Quantize Error: {uncorrected_layer_error}')
+                print(f'Corrected Quantize Error: {corrected_layer_error}')
             
 
         else:
