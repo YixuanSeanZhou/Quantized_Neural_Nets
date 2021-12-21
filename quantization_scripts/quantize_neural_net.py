@@ -214,7 +214,7 @@ class QuantizeNeuralNet():
                     b = None
 
                 Q, b_q, quantize_error, relative_quantize_error = StepAlgorithm._quantize_layer(
-                                            W, b, 
+                                            W, None, 
                                             analog_layer_input, 
                                             quantized_layer_input, 
                                             analog_layer_input.shape[0],
@@ -224,9 +224,9 @@ class QuantizeNeuralNet():
                                             )
 
                 self.quantized_network_layers[layer_idx].weight.data = torch.Tensor(Q).float().view(W_shape)
-                
-                if self.quantized_network_layers[layer_idx].bias is not None:
-                    self.quantized_network_layers[layer_idx].bias.data = torch.Tensor(b_q).float()
+
+                # if self.quantized_network_layers[layer_idx].bias is not None:
+                #     self.quantized_network_layers[layer_idx].bias.data = torch.Tensor(b_q).float()
             
             print(f'Shape of weight matrix is {W.shape}')
             print(f'Shape of X is {analog_layer_input.shape}')
