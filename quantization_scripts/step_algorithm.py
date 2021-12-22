@@ -184,7 +184,6 @@ class StepAlgorithm:
     #     gc.collect()
     #     return Q
     
-
     def _quantize_layer(W, analog_layer_input, quantized_layer_input, m, 
                         alphabet, percentile, groups=1):
         '''
@@ -390,3 +389,19 @@ class StepAlgorithm:
         # msq_quantize_error = np.linalg.norm(analog_layer_input @ W.T  
         #                 - quantized_layer_input @ Q_temp.T, ord='fro')
         # print(f'msq: {msq_quantize_error}')
+
+
+    def bias_correction(analog_input, quantize_input, W, Q, b, m):
+        '''
+        TODO: later doc
+        '''
+        print(m)
+        gap = analog_input @ W.T - quantize_input @ Q.T
+        print(gap.shape)
+        target = gap.reshape(-1)
+        A = np.vstack([np.identity(b.shape[0])] * m)
+        # ret = np.linalg.lstsq(A, target)
+        # A_inv = np.linalg.pinv(A)
+        # b_q = A_inv @ target
+        b_q = b + np.mean(gap, axis=0)
+        return b_q

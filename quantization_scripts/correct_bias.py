@@ -14,28 +14,29 @@ from quantize_neural_net import QuantizeNeuralNet
 from helper_tools import test_accuracy
 from data_loaders import data_loader
 
-log_file_name = '../logs/Quantization_Log.csv'
+log_file_name = '../logs/Quantization_Log_Bias_Correct.csv'
 
 
 if __name__ == '__main__':
 
     # hyperparameter section
-    bits = [5, 4, 3]
-    scalar_list = [1.16]
+    bits = [4]
+    scalar_list = [1.77]
     mlp_scalar_list = [1.6] 
     cnn_scalar_list = [1.6] 
-    batch_size_list = [2048]
+    batch_size_list = [2048, ]
             # 1024, 512, 256, 128, 64, 32] # batch_size used for quantization
     mlp_percentile_list = [1.0]   # quantile of weight matrix W
     cnn_percentile_list = [1.0]   # quantile of weight matrix W
     num_workers = 8
     data_set = 'ILSVRC2012'   # 'ILSVRC2012', 'CIFAR10', 'MNIST' 
-    model_name = 'resnet18' # choose models 
+    model_name = 'mobilenet_v2' # choose models 
     include_0 = True
     ignore_layers = []
     retain_rate = 0.25
     author = 'Yixuan'
     seed = 0 
+    quantized_file_name = '../models/resnet50/batch512_b4_include0_scaler1.81_percentile1.0_retain_rate0.25_dsILSVRC2012'
 
     # default_transform is used for all pretrained models and Normalize is mandatory
     # see https://pytorch.org/vision/stable/models.html
@@ -88,13 +89,18 @@ if __name__ == '__main__':
         model = getattr(torchvision.models, model_name)(pretrained=True) 
         model.eval()  # eval() is necessary 
 
+        quantized_model = torch.load(quantized_file_name)
+
         print(f'\nQuantizing {model_name} with bits: {bits}, include_0: {include_0}, mlp_scalar: {mlp_scalar}, cnn_scalar: {cnn_scalar}, mlp_percentile: {mlp_percentile}, cnn_percentile: {cnn_percentile} retain_rate, {retain_rate}, batch_size {batch_size}\n')
         
         # load the data loader for training and testing
         train_loader, test_loader = data_loader(data_set, batch_size, transform, num_workers)
         
         # quantize the neural net
-        quantizer = QuantizeNeuralNet(model, batch_size, 
+        corrector = CorrectBiasLastLayer(
+                                     model, 
+                                     quantized_model
+                                     batch_size, 
                                      train_loader, 
                                      mlp_bits=bits,
                                      cnn_bits=bits,
@@ -108,17 +114,18 @@ if __name__ == '__main__':
                                      )
         start_time = datetime.now()
 
-        quantized_model = quantizer.quantize_network()
+        quantized_model = corrector.correct_bias_for_last_layer_network()
 
         end_time = datetime.now()
 
-        print(f'\nTime used for quantization: {end_time - start_time}\n')
+        print(f'\nTime used for correction: {end_time - start_time}\n')
 
         if include_0:
             saved_model_name = f'batch{batch_size}_b{bits}_include0_mlpscalar{mlp_scalar}_cnnscalar{cnn_scalar}_mlppercentile{mlp_percentile}_cnnpercentile{cnn_percentile}_retain_rate{retain_rate}_ds{data_set}'
         else: 
             saved_model_name = f'batch{batch_size}_b{bits}_mlpscalar{mlp_scalar}_cnnscalar{cnn_scalar}_mlppercentile{mlp_percentile}_cnnpercentile{cnn_percentile}_retain_rate{retain_rate}_ds{data_set}'
 
+        saved_model_name += '_bias_corrected'
         torch.save(quantized_model, os.path.join('../models/'+model_name, saved_model_name))
 
         topk = (1, 5)   # top-1 and top-5 accuracy
@@ -147,14 +154,14 @@ if __name__ == '__main__':
 
         print(f'\nTime used for evaluation: {end_time - start_time}\n')
 
-        with open(log_file_name, 'a') as f:
-            csv_writer = csv.writer(f)
-            row = [
-                model_name, data_set, batch_size, 
-                original_topk_accuracy[0], topk_accuracy[0], 
-                original_topk_accuracy[1], topk_accuracy[1], 
-                bits, mlp_scalar, cnn_scalar, 
-                mlp_percentile, cnn_percentile, include_0, 
-                retain_rate, seed, author
-            ]
-            csv_writer.writerow(row)
+        # with open(log_file_name, 'a') as f:
+        #     csv_writer = csv.writer(f)
+        #     row = [
+        #         model_name, data_set, batch_size, 
+        #         original_topk_accuracy[0], topk_accuracy[0], 
+        #         original_topk_accuracy[1], topk_accuracy[1], 
+        #         bits, mlp_scalar, cnn_scalar, 
+        #         mlp_percentile, cnn_percentile, include_0, 
+        #         retain_rate, seed, author
+        #     ]
+        #     csv_writer.writerow(row)
