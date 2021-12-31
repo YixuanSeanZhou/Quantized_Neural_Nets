@@ -19,21 +19,22 @@ log_file_name = '../logs/Quantization_Log.csv'
 if __name__ == '__main__':
 
     # hyperparameter section
-    bits = [5]
-    scalar_list = [2.5, 2.6, 2.7, 2.8, 2.9, 3]
-    mlp_scalar_list = [1.6] 
-    cnn_scalar_list = [1.6] 
+    bits = [3]
+    scalar_list = [1.1]
+    mlp_scalar_list = [1.1] 
+    cnn_scalar_list = [1.1] 
     batch_size_list = [128] # batch_size used for quantization
     mlp_percentile_list = [1.0]   # quantile of weight matrix W
     cnn_percentile_list = [1.0]   # quantile of weight matrix W
     num_workers = 8
     data_set = 'ILSVRC2012'   # 'ILSVRC2012', 'CIFAR10', 'MNIST' 
-    model_name = 'efficientnet_b7' # choose models 
+    model_name = 'alexnet' # choose models 
     include_0 = True
     ignore_layers = []
     retain_rate = 0.25
-    author = 'Yixuan'
+    author = 'Jinjie'
     seed = 0 
+    retrain_bs = 256  # batch size used for retraining
 
     # default_transform is used for all pretrained models and Normalize is mandatory
     # see https://pytorch.org/vision/stable/models.html
@@ -90,11 +91,12 @@ if __name__ == '__main__':
         
         # load the data loader for training and testing
         train_loader, test_loader = data_loader(data_set, batch_size, transform, num_workers)
-        retrain_loader, val_loader = data_loader(data_set, 32, transform, num_workers)
+        retrain_loader, val_loader = data_loader(data_set, retrain_bs, transform, num_workers)
         # quantize the neural net
         quantizer = QuantizeNeuralNet(model, batch_size, 
                                      train_loader, 
                                      retrain_loader,
+                                     retrain_bs, 
                                      val_loader,
                                      mlp_bits=bits,
                                      cnn_bits=bits,

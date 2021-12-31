@@ -44,7 +44,7 @@ class QuantizeNeuralNet():
         The data_loader to load data
     '''
     def __init__(self, network_to_quantize, batch_size, data_loader, 
-                retrain_loader, val_loader,
+                retrain_loader, retrain_bs, val_loader,
                  mlp_bits, cnn_bits,
                  include_zero = False, ignore_layers=[], 
                  mlp_alphabet_scalar=1, cnn_alphabet_scalar=1,
@@ -90,6 +90,7 @@ class QuantizeNeuralNet():
         self.data_loader_iter = iter(data_loader)
         self.retrain_loader = retrain_loader
         self.val_loader = val_loader
+        self.retrain_bs = retrain_bs
 
         self.mlp_alphabet_scalar = mlp_alphabet_scalar
         self.cnn_alphabet_scalar = cnn_alphabet_scalar
@@ -230,39 +231,40 @@ class QuantizeNeuralNet():
             print(f'Top-1 accuracy of quantized model is {topk_accuracy[0]}.')
             print(f'Top-5 accuracy of quantized model is {topk_accuracy[1]}.')
 
-            # re-training the neural network 
+            # freeze the quantized layer
             self.analog_network_layers[layer_idx].weight.requires_grad = False
-            # self.analog_network_layers[layer_idx].bias.requires_grad = False
+            self.analog_network_layers[layer_idx].bias.requires_grad = False
             
-            retrain_bs = 32
-            n_epochs = 10
-            lr = 1 * 1e-4
-            weight_decay = 1e-6 
-            optimizer = optim.Adam(filter(lambda p: p.requires_grad, self.analog_network.parameters()), 
-                                lr=lr, weight_decay=weight_decay)
-            self.analog_network.train()
-            print(f'\n Start re-training: {device} is available, num_epochs {n_epochs}, \
-                        batch size {retrain_bs}, lr {lr}\n')
+            # re-training the neural network 
+            if counter > 10:
+                n_epochs = 1
+                lr = 1 * 1e-4
+                weight_decay = 1e-6 
+                optimizer = optim.Adam(filter(lambda p: p.requires_grad, self.analog_network.parameters()), 
+                                    lr=lr, weight_decay=weight_decay)
+                self.analog_network.train()
+                print(f'\n Start re-training: {device} is available, num_epochs {n_epochs}, \
+                            batch size {self.retrain_bs}, lr {lr}\n')
 
-            for epoch in range(1, n_epochs+1):
-                batch_losses = []
-                for x_batch, y_batch in tqdm(self.retrain_loader):
-                    output = self.analog_network(x_batch)
-                    loss = F.cross_entropy(output, y_batch)
-                    loss.backward()
-                    optimizer.step()
-                    optimizer.zero_grad()
-                    batch_losses.append(loss.item())
-                training_loss = np.mean(batch_losses)
-                if (epoch <= 20) | (epoch % 10 == 0):
-                    print(f"[{epoch}/{n_epochs}] Training loss: {training_loss:.4f}")
-            self.analog_network.eval()  
+                for epoch in range(1, n_epochs+1):
+                    batch_losses = []
+                    for x_batch, y_batch in tqdm(self.retrain_loader):
+                        output = self.analog_network(x_batch)
+                        loss = F.cross_entropy(output, y_batch)
+                        loss.backward()
+                        optimizer.step()
+                        optimizer.zero_grad()
+                        batch_losses.append(loss.item())
+                    training_loss = np.mean(batch_losses)
+                    if (epoch <= 20) | (epoch % 10 == 0):
+                        print(f"[{epoch}/{n_epochs}] Training loss: {training_loss:.4f}")
+                self.analog_network.eval()  
 
-            print(f'\n Evaluting the retrained model.\n')
-            topk = (1, 5) 
-            topk_accuracy = test_accuracy(self.analog_network, self.val_loader, topk)
-            print(f'Top-1 accuracy of quantized model is {topk_accuracy[0]}.')
-            print(f'Top-5 accuracy of quantized model is {topk_accuracy[1]}.')
+                print(f'\n Evaluting the retrained model.\n')
+                topk = (1, 5) 
+                topk_accuracy = test_accuracy(self.analog_network, self.val_loader, topk)
+                print(f'Top-1 accuracy of quantized model is {topk_accuracy[0]}.')
+                print(f'Top-5 accuracy of quantized model is {topk_accuracy[1]}.')
         
         return self.analog_network
 
