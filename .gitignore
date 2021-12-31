@@ -134,6 +134,7 @@ experimental_place/data/*
 models/*
 quantization_scripts/*.pt
 quantization_scripts/test.ipynb
+retraining_scripts/test.ipynb
 .DS_Store
 *.DS_Store
 data/*
