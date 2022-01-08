@@ -55,3 +55,33 @@ def test_accuracy(model, test_dl, topk=(1, )):
 
     topk_accuracy = topk_count.sum(axis=1) / len(test_dl.dataset)
     return topk_accuracy
+
+
+def get_param_from_model_name(model_file_name):
+    '''
+    Method to extract parameters from model file name
+    '''
+    file_name = model_file_name.split('/')[-1]
+    params = file_name.split('_')
+    
+    o_batch_size = get_num(params[0])
+    o_bits = get_num(params[1])
+
+    o_mlp_scalar = get_num(params[3])
+    o_cnn_scalar = get_num(params[4])
+    
+    return o_batch_size, o_bits, o_mlp_scalar, o_cnn_scalar
+
+
+def get_num(param_str):
+    '''
+    Helper method to extract parameters from model file name
+    '''
+    ret = 0
+    for i in range(len(param_str)):
+        if param_str[i].isdigit():
+            if param_str[i:].isdigit():
+                ret = int(param_str[i:])
+            else:
+                ret = float(param_str[i:])
+            return ret

@@ -54,7 +54,7 @@ class QuantizeNeuralNet():
                  include_zero = False, ignore_layers=[], 
                  mlp_alphabet_scalar=1, cnn_alphabet_scalar=1,
                  mlp_percentile=0.5, cnn_percentile=0.5,
-                 retain_rate=0.25):
+                 retain_rate=0.25, skip_layers=False):
         '''
         Init the object that is used for quantizing the given neural net.
         Parameters
@@ -85,6 +85,8 @@ class QuantizeNeuralNet():
             The percentile to use for finding each cnn layer's alphabet.
         retain_rate: float:
             The ratio to retain after unfold.
+        skip_layers: bool:
+            Skip the last and first layer for better quality
         Returns
         -------
         QuantizeNeuralNet
@@ -96,6 +98,8 @@ class QuantizeNeuralNet():
 
         self.mlp_alphabet_scalar = mlp_alphabet_scalar
         self.cnn_alphabet_scalar = cnn_alphabet_scalar
+
+        self.skip_layers = skip_layers
 
         self.mlp_bits = mlp_bits
         self.cnn_bits = cnn_bits
@@ -161,7 +165,12 @@ class QuantizeNeuralNet():
                 writer.writeheader()
         
         for layer_idx in layers_to_quantize:
-  
+            
+            if self.skip_layers:
+                if layer_idx == layers_to_quantize[0]:
+                    # or layer_idx == layers_to_quantize[-1]:
+                    continue
+
             gc.collect()
 
             analog_layer_input, quantized_layer_input \

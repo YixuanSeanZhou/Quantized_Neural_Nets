@@ -20,7 +20,7 @@ log_file_name = '../logs/Quantization_Log.csv'
 if __name__ == '__main__':
 
     # hyperparameter section
-    bits = [5, 4, 3]
+    bits = [4]
     scalar_list = [1.16]
     mlp_scalar_list = [1.6] 
     cnn_scalar_list = [1.6] 
@@ -36,6 +36,9 @@ if __name__ == '__main__':
     retain_rate = 0.25
     author = 'Yixuan'
     seed = 0 
+    skip_layers = True
+    if skip_layers:
+        log_file_name = '../logs/Quantization_Log_Skip.csv'
 
     # default_transform is used for all pretrained models and Normalize is mandatory
     # see https://pytorch.org/vision/stable/models.html
@@ -105,6 +108,7 @@ if __name__ == '__main__':
                                      mlp_percentile=mlp_percentile,
                                      cnn_percentile=cnn_percentile,
                                      retain_rate=retain_rate,
+                                     skip_layers=skip_layers
                                      )
         start_time = datetime.now()
 
@@ -118,6 +122,9 @@ if __name__ == '__main__':
             saved_model_name = f'batch{batch_size}_b{bits}_include0_mlpscalar{mlp_scalar}_cnnscalar{cnn_scalar}_mlppercentile{mlp_percentile}_cnnpercentile{cnn_percentile}_retain_rate{retain_rate}_ds{data_set}'
         else: 
             saved_model_name = f'batch{batch_size}_b{bits}_mlpscalar{mlp_scalar}_cnnscalar{cnn_scalar}_mlppercentile{mlp_percentile}_cnnpercentile{cnn_percentile}_retain_rate{retain_rate}_ds{data_set}'
+        
+        if skip_layers:
+            saved_model_name += '_skip_layers'
 
         torch.save(quantized_model, os.path.join('../models/'+model_name, saved_model_name))
 

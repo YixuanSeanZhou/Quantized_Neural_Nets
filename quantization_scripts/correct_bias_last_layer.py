@@ -136,7 +136,8 @@ class CorrectBiasLastLayer():
 
     def correct_bias_for_last_layer_network(self):
         '''
-        Perform the quantization of the neural network.
+        Replace the last layer to be unquantized version, 
+        bias correct the last layer using expected outputs.
         Parameters
         -----------
         
@@ -157,11 +158,14 @@ class CorrectBiasLastLayer():
 
         last_layer_idx = layers_to_quantize[-1]
 
-        if type(self.analog_network_layers[layer_idx]) != LINEAR_MODULE_TYPE:
+        if type(self.analog_network_layers[last_layer_idx]) != LINEAR_MODULE_TYPE:
             print(f'\033[91m Last layer is not MLP, failed to correct \033[0m')
         
         else:
-            W = self.analog_network_layers[last_layer_idx].weight.data.numpy()
+            # replace the last layer to be unquantized version
+            self.quantized_network_layers[last_layer_idx].weight.data = self.analog_network_layers[last_layer_idx].weight.data
+
+            W = self.analog_network_layers[last_layer_idx].weight.data.numpy()           
             Q = self.quantized_network_layers[last_layer_idx].weight.data.numpy()
             if self.analog_network_layers[last_layer_idx].bias is None:
                 print('f''\033[91m Last layer has no bias, failed to correct \033[0m')
@@ -171,7 +175,8 @@ class CorrectBiasLastLayer():
             analog_layer_input, quantized_layer_input \
                 = self._populate_linear_layer_input(last_layer_idx)
             
-            b_prime = bias_correction(analog_layer_input, 
+            b_prime = StepAlgorithm.bias_correction(
+                                      analog_layer_input, 
                                       quantized_layer_input, 
                                       W, Q, b, analog_layer_input.shape[0])
             
