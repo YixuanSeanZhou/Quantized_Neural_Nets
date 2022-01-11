@@ -184,12 +184,8 @@ class StepAlgorithm:
     #     gc.collect()
     #     return Q
     
-<<<<<<< HEAD
 
     def _quantize_layer(W, b, analog_layer_input, quantized_layer_input, m, 
-=======
-    def _quantize_layer(W, analog_layer_input, quantized_layer_input, m, 
->>>>>>> yixuan_branch
                         alphabet, percentile, groups=1):
         '''
         Quantize one layer in parallel.

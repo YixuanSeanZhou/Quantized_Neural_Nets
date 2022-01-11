@@ -11,14 +11,11 @@ import gc
 import glob
 from datetime import datetime, timedelta
 
-from quantize_neural_net import QuantizeNeuralNet
 from correct_bias_last_layer import CorrectBiasLastLayer
 from helper_tools import test_accuracy, get_param_from_model_name
 from data_loaders import data_loader
 
 log_file_name = '../logs/Quantization_Log_Bias_Correct.csv'
-
-
 
 
 if __name__ == '__main__':
