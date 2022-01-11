@@ -36,7 +36,7 @@ fields = [
 ]
 LAYER_LOGGING_TOGGLE = False
 
-class QuantizeNeuralNet():
+class CorrectBiasLastLayer():
     '''
     Corresponding object to work with for quantizing the neural network.
     
@@ -49,18 +49,21 @@ class QuantizeNeuralNet():
     data_loader: function
         The data_loader to load data
     '''
-    def __init__(self, network_to_quantize, batch_size, data_loader, 
+    def __init__(self, analog_network, quantized_network, 
+                 batch_size, data_loader, 
                  mlp_bits, cnn_bits,
                  include_zero = False, ignore_layers=[], 
                  mlp_alphabet_scalar=1, cnn_alphabet_scalar=1,
                  mlp_percentile=0.5, cnn_percentile=0.5,
-                 retain_rate=0.25, skip_layers=False):
+                 retain_rate=0.25):
         '''
         Init the object that is used for quantizing the given neural net.
         Parameters
         -----------
-        network_to_quantize : nn.Module
+        analog_network : nn.Module
             The neural network to be quantized.
+        quantized_network : nn.Module
+            The quantized neural network.
         batch_size: int,
             The batch size input to each layer when quantization is performed.
         data_loader: function,
@@ -85,26 +88,24 @@ class QuantizeNeuralNet():
             The percentile to use for finding each cnn layer's alphabet.
         retain_rate: float:
             The ratio to retain after unfold.
-        skip_layers: bool:
-            Skip the last and first layer for better quality
         Returns
         -------
         QuantizeNeuralNet
             The object that is used to perform quantization
         '''
-        self.analog_network = network_to_quantize
+        self.analog_network = analog_network
+        self.quantized_network = quantized_network
         self.batch_size = batch_size
         self.data_loader_iter = iter(data_loader)
 
         self.mlp_alphabet_scalar = mlp_alphabet_scalar
         self.cnn_alphabet_scalar = cnn_alphabet_scalar
 
-        self.skip_layers = skip_layers
-
         self.mlp_bits = mlp_bits
         self.cnn_bits = cnn_bits
         self.mlp_alphabet = np.linspace(-1, 1, num=int(2 ** mlp_bits))
         self.cnn_alphabet = np.linspace(-1, 1, num=int(2 ** cnn_bits))
+        
         if include_zero:
             self.mlp_alphabet = np.append(self.mlp_alphabet, 0)
             self.cnn_alphabet = np.append(self.cnn_alphabet, 0)
@@ -115,7 +116,6 @@ class QuantizeNeuralNet():
         self.ignore_layers = ignore_layers
         self.retain_rate = retain_rate
         
-        self.quantized_network = copy.deepcopy(self.analog_network)
         self.analog_network_layers = [] 
         self._extract_layers(self.analog_network, self.analog_network_layers)
         self.quantized_network_layers = []
@@ -134,9 +134,10 @@ class QuantizeNeuralNet():
                 # if leaf node, add it to list
                 layer_list.append(layer)
 
-    def quantize_network(self):
+    def correct_bias_for_last_layer_network(self):
         '''
-        Perform the quantization of the neural network.
+        Replace the last layer to be unquantized version, 
+        bias correct the last layer using expected outputs.
         Parameters
         -----------
         
@@ -155,110 +156,35 @@ class QuantizeNeuralNet():
         print(f'Layer idx to quantize {layers_to_quantize}')
         print(f'Total num to quantize {len(layers_to_quantize)}')
 
-        counter = 0
-        
-        if LAYER_LOGGING_TOGGLE:
-            if os.path.isfile(LAYER_LOG_FILE):
-                os.remove(LAYER_LOG_FILE)
-            with open(LAYER_LOG_FILE, 'w') as f:
-                writer = csv.DictWriter(f, fieldnames=fields)
-                writer.writeheader()
-        
-        for layer_idx in layers_to_quantize:
-            
-            if self.skip_layers:
-                if layer_idx == layers_to_quantize[0]:
-                    # or layer_idx == layers_to_quantize[-1]:
-                    continue
+        last_layer_idx = layers_to_quantize[-1]
 
-            gc.collect()
+        if type(self.analog_network_layers[last_layer_idx]) != LINEAR_MODULE_TYPE:
+            print(f'\033[91m Last layer is not MLP, failed to correct \033[0m')
+        
+        else:
+            # replace the last layer to be unquantized version
+            self.quantized_network_layers[last_layer_idx].weight.data = self.analog_network_layers[last_layer_idx].weight.data
+
+            W = self.analog_network_layers[last_layer_idx].weight.data.numpy()           
+            Q = self.quantized_network_layers[last_layer_idx].weight.data.numpy()
+            if self.analog_network_layers[last_layer_idx].bias is None:
+                print('f''\033[91m Last layer has no bias, failed to correct \033[0m')
+                return self.quantized_network
+            b = self.analog_network_layers[last_layer_idx].bias.data.numpy()
 
             analog_layer_input, quantized_layer_input \
-                = self._populate_linear_layer_input(layer_idx)
-
-            print(f'\nQuantizing layer: {layer_idx}')
-            print(f'Quantization progress: {counter} out of {len(layers_to_quantize)}\n')
-            counter += 1
-
-            if type(self.analog_network_layers[layer_idx]) == LINEAR_MODULE_TYPE:
-
-                groups = 1
-                # Note that each row of W represents a neuron
-                W = self.analog_network_layers[layer_idx].weight.data.numpy()
-                
-                if self.analog_network_layers[layer_idx].bias is not None:
-                    b = self.analog_network_layers[layer_idx].bias.data.numpy()
-                else:
-                    b = None
-
-                Q, b_q, quantize_error, relative_quantize_error = StepAlgorithm._quantize_layer(
-                                                W, b,
-                                                analog_layer_input, 
-                                                quantized_layer_input, 
-                                                analog_layer_input.shape[0],
-                                                self.mlp_alphabet * self.mlp_alphabet_scalar, 
-                                                self.mlp_percentile
-                                                )
-
-                self.quantized_network_layers[layer_idx].weight.data = torch.Tensor(Q).float()
-                
-                if self.quantized_network_layers[layer_idx].bias is not None:
-                    self.quantized_network_layers[layer_idx].bias.data = torch.Tensor(b_q).float()
-
-            elif type(self.analog_network_layers[layer_idx]) == CONV2D_MODULE_TYPE:
-
-                groups = self.analog_network_layers[layer_idx].groups
-
-                W = self.analog_network_layers[layer_idx].weight.data 
-                # W has shape (out_channels, in_channesl/groups, k_size[0], k_size[1])
-                W_shape = W.shape
-                
-                W = W.view(W.size(0), -1).numpy() 
-                # shape (out_channels, in_channesl/groups*k_size[0]*k_size[1])
-                # each row of W is a neuron (vectorized sliding block)
-
-                if self.analog_network_layers[layer_idx].bias is not None:
-                    b = self.analog_network_layers[layer_idx].bias.data.numpy()
-                else:
-                    b = None
-
-                Q, b_q, quantize_error, relative_quantize_error = StepAlgorithm._quantize_layer(
-                                            W, None, 
-                                            analog_layer_input, 
-                                            quantized_layer_input, 
-                                            analog_layer_input.shape[0],
-                                            self.cnn_alphabet * self.cnn_alphabet_scalar,
-                                            self.cnn_percentile,
-                                            groups=groups
-                                            )
-
-                self.quantized_network_layers[layer_idx].weight.data = torch.Tensor(Q).float().view(W_shape)
-
-                # if self.quantized_network_layers[layer_idx].bias is not None:
-                #     self.quantized_network_layers[layer_idx].bias.data = torch.Tensor(b_q).float()
+                = self._populate_linear_layer_input(last_layer_idx)
             
-            print(f'Shape of weight matrix is {W.shape}')
-            print(f'Shape of X is {analog_layer_input.shape}')
-            print(f'Median of W is {np.quantile(np.abs(W), 0.5, axis=1).mean()}')
-            print(f'75q of W is {np.quantile(np.abs(W), 0.75, axis=1).mean()}')
-            #  print(f'The {round(self.percentile, 2)} percentile of W is {np.quantile(np.abs(W), self.percentile, axis=1).mean()}')
-            print(f'Max of W is {np.quantile(np.abs(W), 1, axis=1).mean()}')
-            print(f'The quantization error of layer {layer_idx} is {quantize_error}.')
-            print(f'The relative quantization error of layer {layer_idx} is {relative_quantize_error}.\n')
+            b_prime = StepAlgorithm.bias_correction(
+                                      analog_layer_input, 
+                                      quantized_layer_input, 
+                                      W, Q, b, analog_layer_input.shape[0])
+            
+            self.quantized_network_layers[last_layer_idx].bias.data = torch.Tensor(b_prime).float()
 
-            del analog_layer_input, quantized_layer_input
-            
-            if LAYER_LOGGING_TOGGLE:
-                with open(LAYER_LOG_FILE, 'a') as f:
-                    csv_writer = csv.writer(f)
-                    row = [
-                        layer_idx, type(self.analog_network_layers[layer_idx]), groups,
-                        np.max(W), np.median(W), np.quantile(np.abs(W), 1, axis=1).mean(),
-                        quantize_error, relative_quantize_error
-                    ]
-                    csv_writer.writerow(row)
-            
-            gc.collect()
+        del analog_layer_input, quantized_layer_input
+
+        gc.collect()
 
         return self.quantized_network
 
@@ -410,56 +336,3 @@ class SaveInputConv2d:
 
         self.inputs.append(unfolded)
         raise InterruptException
-        
-        
-        # some code might be useful for seperate out channel
-        # if len(module_in) != 1:
-        #     raise TypeError('The number of input layer is not equal to one!')
-        # # module_in has shape (B, C, H, W)
-        # module_input = module_in[0]
-
-        # if self.groups == 1:
-
-        #     # Need to consider both batch_size B and in_channels C
-        #     unfolded = self.unfolder(module_input)  # shape (B, C*kernel_size[0]*kernel_size[1], L)
-            
-        #     batch_size, num_blocks = unfolded.shape[0], unfolded.shape[-1]
-        #     unfolded = torch.transpose(unfolded, 1, 2) # shape (B, L, C*kernel_size[0]*kernel_size[1])
-        #     unfolded = unfolded.reshape(-1, unfolded.size(-1)).numpy() # shape (B*L, C*kernel_size[0]*kernel_size[1])
-
-        #     if self.call_count == 0:
-        #         self.rand_indices = np.concatenate(
-        #                     [np.random.choice(np.arange(num_blocks*i, num_blocks*(i+1)), 
-        #                     size=int(self.p*num_blocks + 1 if self.p != 1 else self.p*num_blocks)) 
-        #                     for i in range(batch_size)]
-        #                     ) # need to define self.p (probability)
-        #     self.call_count += 1
-        #     unfolded = unfolded[self.rand_indices]
-
-        # else:
-        #     group_channel = module_input.shape[1] // self.groups
-            
-        #     unfolded = [
-        #         self.unfolder(module_input[:, i*group_channel: (i+1)*group_channel, :, :])
-        #         for i in range(self.groups)
-        #     ]
-
-        #     batch_size, num_blocks = unfolded[0].shape[0], unfolded[0].shape[-1]
-
-        #     if self.call_count == 0:
-        #         self.rand_indices = np.concatenate(
-        #                     [np.random.choice(np.arange(num_blocks*i, num_blocks*(i+1)), 
-        #                     size=int(self.p*num_blocks + 1 if self.p != 1 else self.p*num_blocks)) 
-        #                     for i in range(batch_size)]
-        #                     ) # need to define self.p (probability)
-        #     self.call_count += 1
-
-        #     for i in range(len(unfolded)):
-        #         unfolded[i] = torch.transpose(unfolded[i], 1, 2)
-        #         unfolded[i] = unfolded[i].reshape(-1, unfolded[i].size(-1)).numpy()
-        #         unfolded[i] = unfolded[i][self.rand_indices]
-
-        # self.inputs.append(unfolded)
-        # raise InterruptException
-        
-    
