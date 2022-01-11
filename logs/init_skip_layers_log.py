@@ -2,7 +2,7 @@ import csv
 from datetime import datetime
 import os
 
-log_file_name = 'Quantization_Log.csv'
+log_file_name = 'Quantization_Log_Skip.csv'
 
 fields = ['Model Name', 'Dataset', 'Quantization Batch Size', 'Original Top1 Accuracy',
           'Quantized Top1 Accuracy', 'Original Top5 Accuracy', 'Quantized Top5 Accuracy', 

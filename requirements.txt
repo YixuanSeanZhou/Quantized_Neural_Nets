@@ -7,5 +7,6 @@ pyparsing==3.0.3
 python-dateutil==2.8.2
 six==1.16.0
 torch==1.10.0
-torchvision==0.11.1
+torchvision==0.11.2
 typing-extensions==3.10.0.2
+tqdm==4.62.3

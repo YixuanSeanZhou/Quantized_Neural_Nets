@@ -185,7 +185,7 @@ class StepAlgorithm:
     #     return Q
     
 
-    def _quantize_layer(W, analog_layer_input, quantized_layer_input, m, 
+    def _quantize_layer(W, b, analog_layer_input, quantized_layer_input, m, 
                         alphabet, percentile, groups=1):
         '''
         Quantize one layer in parallel.
@@ -193,6 +193,8 @@ class StepAlgorithm:
         -----------
         W : numpy.array
             The layer to be quantized.
+        b : numpy.array
+            The layer's bias to be corrected
         analog_layer_input: numpy.array,
             The input for the layer of analog network.
         quantized_layer_input: numpy.array,
@@ -216,6 +218,8 @@ class StepAlgorithm:
         '''
         pool = mp.Pool(mp.cpu_count() - 1)
         
+        b_q = b
+        
         rad = np.quantile(np.abs(W), percentile, axis=1).mean()
         layer_alphabet = alphabet * rad 
 
@@ -235,6 +239,22 @@ class StepAlgorithm:
             quantize_error = np.linalg.norm(analog_layer_input @ W.T  
                             - quantized_layer_input @ Q.T, ord='fro')
             relative_quantize_error = quantize_error / np.linalg.norm(analog_layer_input @ W.T, ord='fro')
+            
+            # bias correction
+            
+            if b is not None:
+                b_q = StepAlgorithm.bias_correction(analog_layer_input, 
+                                                    quantized_layer_input, 
+                                                    W, Q, b, m)
+                
+                uncorrected_layer_error = np.linalg.norm(analog_layer_input @ W.T + b 
+                                - quantized_layer_input @ Q.T + b, ord='fro')
+                corrected_layer_error = np.linalg.norm(analog_layer_input @ W.T + b 
+                                - quantized_layer_input @ Q.T + b_q, ord='fro')
+                
+                print(f'Uncorrected Quantize Error: {uncorrected_layer_error}')
+                print(f'Corrected Quantize Error: {corrected_layer_error}')
+            
 
         else:
             # Q = np.zeros_like(W) # shape (out_channels, in_channels/groups*k_size[0]*k_size[1])
@@ -296,8 +316,26 @@ class StepAlgorithm:
         del pool
 
         gc.collect()
-        return Q, quantize_error, relative_quantize_error
+        return Q, b_q, quantize_error, relative_quantize_error
 
+
+    def bias_correction(analog_input, quantize_input, W, Q, b, m):
+        '''
+        TODO: later doc
+        '''
+        print(m)
+        gap = analog_input @ W.T - quantize_input @ Q.T
+        print(gap.shape)
+        target = gap.reshape(-1)
+        A = np.vstack([np.identity(b.shape[0])] * m)
+        # ret = np.linalg.lstsq(A, target)
+        # A_inv = np.linalg.pinv(A)
+        # b_q = A_inv @ target
+        b_q = b + np.mean(gap, axis=0)
+        return b_q
+        
+        
+        
 
             # old code for else
             # Ws = np.split(W, groups)
@@ -390,3 +428,19 @@ class StepAlgorithm:
         # msq_quantize_error = np.linalg.norm(analog_layer_input @ W.T  
         #                 - quantized_layer_input @ Q_temp.T, ord='fro')
         # print(f'msq: {msq_quantize_error}')
+
+
+    def bias_correction(analog_input, quantize_input, W, Q, b, m):
+        '''
+        TODO: later doc
+        '''
+        print(m)
+        gap = analog_input @ W.T - quantize_input @ Q.T
+        print(gap.shape)
+        target = gap.reshape(-1)
+        A = np.vstack([np.identity(b.shape[0])] * m)
+        # ret = np.linalg.lstsq(A, target)
+        # A_inv = np.linalg.pinv(A)
+        # b_q = A_inv @ target
+        b_q = b + np.mean(gap, axis=0)
+        return b_q
