@@ -54,7 +54,7 @@ class QuantizeNeuralNet():
                  include_zero = False, ignore_layers=[], 
                  mlp_alphabet_scalar=1, cnn_alphabet_scalar=1,
                  mlp_percentile=0.5, cnn_percentile=0.5,
-                 retain_rate=0.25, skip_layers=False):
+                 retain_rate=0.25):
         '''
         Init the object that is used for quantizing the given neural net.
         Parameters
@@ -85,8 +85,6 @@ class QuantizeNeuralNet():
             The percentile to use for finding each cnn layer's alphabet.
         retain_rate: float:
             The ratio to retain after unfold.
-        skip_layers: bool:
-            Skip the last and first layer for better quality
         Returns
         -------
         QuantizeNeuralNet
@@ -98,8 +96,6 @@ class QuantizeNeuralNet():
 
         self.mlp_alphabet_scalar = mlp_alphabet_scalar
         self.cnn_alphabet_scalar = cnn_alphabet_scalar
-
-        self.skip_layers = skip_layers
 
         self.mlp_bits = mlp_bits
         self.cnn_bits = cnn_bits
@@ -165,12 +161,7 @@ class QuantizeNeuralNet():
                 writer.writeheader()
         
         for layer_idx in layers_to_quantize:
-            
-            if self.skip_layers:
-                if layer_idx == layers_to_quantize[0]:
-                    # or layer_idx == layers_to_quantize[-1]:
-                    continue
-
+  
             gc.collect()
 
             analog_layer_input, quantized_layer_input \
@@ -185,14 +176,8 @@ class QuantizeNeuralNet():
                 groups = 1
                 # Note that each row of W represents a neuron
                 W = self.analog_network_layers[layer_idx].weight.data.numpy()
-                
-                if self.analog_network_layers[layer_idx].bias is not None:
-                    b = self.analog_network_layers[layer_idx].bias.data.numpy()
-                else:
-                    b = None
 
-                Q, b_q, quantize_error, relative_quantize_error = StepAlgorithm._quantize_layer(
-                                                W, b,
+                Q, quantize_error, relative_quantize_error = StepAlgorithm._quantize_layer(W, 
                                                 analog_layer_input, 
                                                 quantized_layer_input, 
                                                 analog_layer_input.shape[0],
@@ -201,9 +186,6 @@ class QuantizeNeuralNet():
                                                 )
 
                 self.quantized_network_layers[layer_idx].weight.data = torch.Tensor(Q).float()
-                
-                if self.quantized_network_layers[layer_idx].bias is not None:
-                    self.quantized_network_layers[layer_idx].bias.data = torch.Tensor(b_q).float()
 
             elif type(self.analog_network_layers[layer_idx]) == CONV2D_MODULE_TYPE:
 
@@ -217,13 +199,7 @@ class QuantizeNeuralNet():
                 # shape (out_channels, in_channesl/groups*k_size[0]*k_size[1])
                 # each row of W is a neuron (vectorized sliding block)
 
-                if self.analog_network_layers[layer_idx].bias is not None:
-                    b = self.analog_network_layers[layer_idx].bias.data.numpy()
-                else:
-                    b = None
-
-                Q, b_q, quantize_error, relative_quantize_error = StepAlgorithm._quantize_layer(
-                                            W, None, 
+                Q, quantize_error, relative_quantize_error = StepAlgorithm._quantize_layer(W, 
                                             analog_layer_input, 
                                             quantized_layer_input, 
                                             analog_layer_input.shape[0],
@@ -233,9 +209,6 @@ class QuantizeNeuralNet():
                                             )
 
                 self.quantized_network_layers[layer_idx].weight.data = torch.Tensor(Q).float().view(W_shape)
-
-                # if self.quantized_network_layers[layer_idx].bias is not None:
-                #     self.quantized_network_layers[layer_idx].bias.data = torch.Tensor(b_q).float()
             
             print(f'Shape of weight matrix is {W.shape}')
             print(f'Shape of X is {analog_layer_input.shape}')

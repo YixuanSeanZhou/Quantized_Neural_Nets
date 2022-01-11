@@ -1,0 +1,7 @@
+Model Name,Dataset,Quantization Batch Size,Original Top1 Accuracy,Quantized Top1 Accuracy,Original Top5 Accuracy,Quantized Top5 Accuracy,Bits,MLP_Alphabet_Scalar,CNN_Alphabet_Scalar,MLP_Percentile,CNN_Percentile,Include 0,Retain_rate,Seed,Author
+resnet18,ILSVRC2012,512,0.69758,0.68686,0.89078,0.88458,5,1.16,1.16,1.0,1.0,True,0.25,0,Yixuan
+resnet18,ILSVRC2012,512,0.69758,0.6762,0.89078,0.87988,4,1.16,1.16,1.0,1.0,True,0.25,0,Yixuan
+resnet18,ILSVRC2012,512,0.69758,0.6861,0.89078,0.88486,5,1.16,1.16,1.0,1.0,True,0.25,0,Yixuan
+resnet18,ILSVRC2012,2048,0.69758,0.692,0.89078,0.88702,5,1.16,1.16,1.0,1.0,True,0.25,0,Yixuan
+resnet18,ILSVRC2012,2048,0.69758,0.69044,0.89078,0.88638,5,1.16,1.16,1.0,1.0,True,0.25,0,Yixuan
+resnet18,ILSVRC2012,2048,0.69758,0.687,0.89078,0.88468,4,1.16,1.16,1.0,1.0,True,0.25,0,Yixuan

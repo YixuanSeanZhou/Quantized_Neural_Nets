@@ -86,7 +86,7 @@ if __name__ == '__main__':
         # TODO: update the quantize_class
 
         np.random.seed(seed)
-
+        
         # load the model to be quantized from PyTorch resource
         model = getattr(torchvision.models, model_name)(pretrained=True) 
         model.eval()  # eval() is necessary 
@@ -108,7 +108,6 @@ if __name__ == '__main__':
                                      mlp_percentile=mlp_percentile,
                                      cnn_percentile=cnn_percentile,
                                      retain_rate=retain_rate,
-                                     skip_layers=skip_layers
                                      )
         start_time = datetime.now()
 
@@ -122,9 +121,6 @@ if __name__ == '__main__':
             saved_model_name = f'batch{batch_size}_b{bits}_include0_mlpscalar{mlp_scalar}_cnnscalar{cnn_scalar}_mlppercentile{mlp_percentile}_cnnpercentile{cnn_percentile}_retain_rate{retain_rate}_ds{data_set}'
         else: 
             saved_model_name = f'batch{batch_size}_b{bits}_mlpscalar{mlp_scalar}_cnnscalar{cnn_scalar}_mlppercentile{mlp_percentile}_cnnpercentile{cnn_percentile}_retain_rate{retain_rate}_ds{data_set}'
-        
-        if skip_layers:
-            saved_model_name += '_skip_layers'
 
         torch.save(quantized_model, os.path.join('../models/'+model_name, saved_model_name))
 
@@ -137,9 +133,6 @@ if __name__ == '__main__':
             print(f'\nEvaluting the original model to get its accuracy\n')
             original_topk_accuracy = test_accuracy(model, test_loader, topk)
         
-        del quantizer
-        gc.collect()
-
         print(f'Top-1 accuracy of {model_name} is {original_topk_accuracy[0]}.')
         print(f'Top-5 accuracy of {model_name} is {original_topk_accuracy[1]}.')
         
