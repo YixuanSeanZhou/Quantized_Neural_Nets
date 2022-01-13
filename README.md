@@ -22,7 +22,10 @@ network that is quantized.
 
 ### Jinjie's Update 
 
-To unzip Imagenet dataset, run the following command
+To unzip Imagenet dataset, run the following procedure: 
+
+First, move the `.tar` file of the Imagenet dataset into the current working directory. Then run the following commands:
+
 ```
 mkdir train && mv ILSVRC2012_img_train.tar train/ && cd train
 tar -xvf ILSVRC2012_img_train.tar && rm -f ILSVRC2012_img_train.tar

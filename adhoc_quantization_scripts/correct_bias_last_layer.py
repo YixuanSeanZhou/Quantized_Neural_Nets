@@ -38,14 +38,14 @@ LAYER_LOGGING_TOGGLE = False
 
 class CorrectBiasLastLayer():
     '''
-    Corresponding object to work with for quantizing the neural network.
+    Corresponding object to restore the last layer and bias correct it.
     
     Attributes
     ----------
     analog_network : nn.Module
-        Copy of the neural network to be quantized.
+        Copy of the neural network that is already quantized.
     batch_size: int
-        The batch size to be used to quantize each layer.
+        The batch size to be used to perform bias correction.
     data_loader: function
         The data_loader to load data
     '''
