@@ -28,13 +28,6 @@ SUPPORTED_BLOCK_TYPE = {nn.Sequential,
                         ConvNormActivation, SqueezeExcitation, MBConv,
                         InvertedResidual
                         }
-LAYER_LOG_FILE = '../logs/Layer_Quantize_Log.csv'
-fields = [
-    'Layer #', 'Layer Type', 'Group', 'Weight Max', 
-    'Weight Median', 'Weight Row Max Mean', 
-    'Quantization Loss', 'Relative Loss'
-]
-LAYER_LOGGING_TOGGLE = False
 
 class QuantizeNeuralNet():
     '''
@@ -153,13 +146,6 @@ class QuantizeNeuralNet():
 
         counter = 0
         
-        if LAYER_LOGGING_TOGGLE:
-            if os.path.isfile(LAYER_LOG_FILE):
-                os.remove(LAYER_LOG_FILE)
-            with open(LAYER_LOG_FILE, 'w') as f:
-                writer = csv.DictWriter(f, fieldnames=fields)
-                writer.writeheader()
-        
         for layer_idx in layers_to_quantize:
   
             gc.collect()
@@ -220,17 +206,7 @@ class QuantizeNeuralNet():
             print(f'The relative quantization error of layer {layer_idx} is {relative_quantize_error}.\n')
 
             del analog_layer_input, quantized_layer_input
-            
-            if LAYER_LOGGING_TOGGLE:
-                with open(LAYER_LOG_FILE, 'a') as f:
-                    csv_writer = csv.writer(f)
-                    row = [
-                        layer_idx, type(self.analog_network_layers[layer_idx]), groups,
-                        np.max(W), np.median(W), np.quantile(np.abs(W), 1, axis=1).mean(),
-                        quantize_error, relative_quantize_error
-                    ]
-                    csv_writer.writerow(row)
-            
+
             gc.collect()
 
         return self.quantized_network
@@ -303,29 +279,16 @@ class SaveInputMLP:
     """
     def __init__(self):
         self.inputs = []
-        # self.batch_size = batch_size
-        # self.p = 0.125
-        # self.call_count = 0
-        # self.rand_indices = []
 
     def __call__(self, module, module_in, module_out):
+        '''
+        Process the input to the attached layer and save in self.inputs
+        '''
         if len(module_in) != 1:
             raise TypeError('The number of input layer is not equal to one!')
     
         self.inputs.append(module_in[0].numpy())
         raise InterruptException
-
-        # batch_size = module_in[0].shape[0]
-
-        # if self.call_count == 0:
-        #     self.rand_indices = np.random.choice(np.arange(0, batch_size), size=int(self.p*batch_size + 1 if self.p != 1 else batch_size)) 
-        # self.call_count += 1
-        
-        # module_in_numpy = module_in[0].numpy()
-
-        # self.inputs.append(module_in_numpy[self.rand_indices])
-        
-        # raise InterruptException
 
 
 class SaveInputConv2d:
@@ -360,6 +323,9 @@ class SaveInputConv2d:
 
 
     def __call__(self, module, module_in, module_out):
+        '''
+        Process the input to the attached layer and save in self.inputs
+        '''
         if len(module_in) != 1:
             raise TypeError('The number of input layer is not equal to one!')
         # module_in has shape (B, C, H, W)
@@ -383,56 +349,3 @@ class SaveInputConv2d:
 
         self.inputs.append(unfolded)
         raise InterruptException
-        
-        
-        # some code might be useful for seperate out channel
-        # if len(module_in) != 1:
-        #     raise TypeError('The number of input layer is not equal to one!')
-        # # module_in has shape (B, C, H, W)
-        # module_input = module_in[0]
-
-        # if self.groups == 1:
-
-        #     # Need to consider both batch_size B and in_channels C
-        #     unfolded = self.unfolder(module_input)  # shape (B, C*kernel_size[0]*kernel_size[1], L)
-            
-        #     batch_size, num_blocks = unfolded.shape[0], unfolded.shape[-1]
-        #     unfolded = torch.transpose(unfolded, 1, 2) # shape (B, L, C*kernel_size[0]*kernel_size[1])
-        #     unfolded = unfolded.reshape(-1, unfolded.size(-1)).numpy() # shape (B*L, C*kernel_size[0]*kernel_size[1])
-
-        #     if self.call_count == 0:
-        #         self.rand_indices = np.concatenate(
-        #                     [np.random.choice(np.arange(num_blocks*i, num_blocks*(i+1)), 
-        #                     size=int(self.p*num_blocks + 1 if self.p != 1 else self.p*num_blocks)) 
-        #                     for i in range(batch_size)]
-        #                     ) # need to define self.p (probability)
-        #     self.call_count += 1
-        #     unfolded = unfolded[self.rand_indices]
-
-        # else:
-        #     group_channel = module_input.shape[1] // self.groups
-            
-        #     unfolded = [
-        #         self.unfolder(module_input[:, i*group_channel: (i+1)*group_channel, :, :])
-        #         for i in range(self.groups)
-        #     ]
-
-        #     batch_size, num_blocks = unfolded[0].shape[0], unfolded[0].shape[-1]
-
-        #     if self.call_count == 0:
-        #         self.rand_indices = np.concatenate(
-        #                     [np.random.choice(np.arange(num_blocks*i, num_blocks*(i+1)), 
-        #                     size=int(self.p*num_blocks + 1 if self.p != 1 else self.p*num_blocks)) 
-        #                     for i in range(batch_size)]
-        #                     ) # need to define self.p (probability)
-        #     self.call_count += 1
-
-        #     for i in range(len(unfolded)):
-        #         unfolded[i] = torch.transpose(unfolded[i], 1, 2)
-        #         unfolded[i] = unfolded[i].reshape(-1, unfolded[i].size(-1)).numpy()
-        #         unfolded[i] = unfolded[i][self.rand_indices]
-
-        # self.inputs.append(unfolded)
-        # raise InterruptException
-        
-    

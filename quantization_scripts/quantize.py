@@ -34,7 +34,7 @@ if __name__ == '__main__':
     include_0 = True
     ignore_layers = []
     retain_rate = 0.25
-    author = 'Yixuan'
+    author = 'XXX'
     seed = 0 
     skip_layers = True
     if skip_layers:

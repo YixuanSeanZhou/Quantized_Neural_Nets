@@ -28,24 +28,17 @@ SUPPORTED_BLOCK_TYPE = {nn.Sequential,
                         ConvNormActivation, SqueezeExcitation, MBConv,
                         InvertedResidual
                         }
-LAYER_LOG_FILE = '../logs/Layer_Quantize_Log.csv'
-fields = [
-    'Layer #', 'Layer Type', 'Group', 'Weight Max', 
-    'Weight Median', 'Weight Row Max Mean', 
-    'Quantization Loss', 'Relative Loss'
-]
-LAYER_LOGGING_TOGGLE = False
 
 class CorrectBiasLastLayer():
     '''
-    Corresponding object to work with for quantizing the neural network.
+    Corresponding object to restore the last layer and bias correct it.
     
     Attributes
     ----------
     analog_network : nn.Module
-        Copy of the neural network to be quantized.
+        Copy of the neural network that is already quantized.
     batch_size: int
-        The batch size to be used to quantize each layer.
+        The batch size to be used to perform bias correction.
     data_loader: function
         The data_loader to load data
     '''
@@ -138,9 +131,9 @@ class CorrectBiasLastLayer():
         '''
         Replace the last layer to be unquantized version, 
         bias correct the last layer using expected outputs.
+        
         Parameters
         -----------
-        
         Returns
         -------
         nn.Module
@@ -256,29 +249,16 @@ class SaveInputMLP:
     """
     def __init__(self):
         self.inputs = []
-        # self.batch_size = batch_size
-        # self.p = 0.125
-        # self.call_count = 0
-        # self.rand_indices = []
 
     def __call__(self, module, module_in, module_out):
+        '''
+        Process the input to the attached layer and save in self.inputs
+        '''
         if len(module_in) != 1:
             raise TypeError('The number of input layer is not equal to one!')
     
         self.inputs.append(module_in[0].numpy())
         raise InterruptException
-
-        # batch_size = module_in[0].shape[0]
-
-        # if self.call_count == 0:
-        #     self.rand_indices = np.random.choice(np.arange(0, batch_size), size=int(self.p*batch_size + 1 if self.p != 1 else batch_size)) 
-        # self.call_count += 1
-        
-        # module_in_numpy = module_in[0].numpy()
-
-        # self.inputs.append(module_in_numpy[self.rand_indices])
-        
-        # raise InterruptException
 
 
 class SaveInputConv2d:
@@ -313,6 +293,9 @@ class SaveInputConv2d:
 
 
     def __call__(self, module, module_in, module_out):
+        '''
+        Process the input to the attached layer and save in self.inputs
+        '''
         if len(module_in) != 1:
             raise TypeError('The number of input layer is not equal to one!')
         # module_in has shape (B, C, H, W)

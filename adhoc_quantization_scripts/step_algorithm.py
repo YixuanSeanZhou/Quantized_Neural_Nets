@@ -11,15 +11,28 @@ class StepAlgorithm:
 
     def bias_correction(analog_input, quantize_input, W, Q, b, m):
         '''
-        TODO: later doc
+        Bias correct the layer. 
+        
+        Parameters:
+        -----------
+        analog_input: numpy.array
+            The input to the analog layer
+        quantize_input: numpy.array
+            The input to the quantize layer
+        W: numpy.array
+            The weight matrix of the analog layer
+        Q: numpy.array
+            The weight matrix of the quantzied layer
+        b: numpy.array
+            The bias term of the analog layer
+        m: int
+            Batch size
+        Returns
+        -------
+        b_q
+            The corrected bias of the quantized layer using average.
         '''
-        print(m)
         gap = analog_input @ W.T - quantize_input @ Q.T
-        print(gap.shape)
-        # target = gap.reshape(-1)
-        # A = np.vstack([np.identity(b.shape[0])] * m)
-        # ret = np.linalg.lstsq(A, target)
-        # A_inv = np.linalg.pinv(A)
-        # b_q = A_inv @ target
         b_q = b + np.mean(gap, axis=0)
         return b_q
+        

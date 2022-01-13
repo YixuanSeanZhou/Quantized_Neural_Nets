@@ -29,10 +29,10 @@ if __name__ == '__main__':
     include_0 = True
     ignore_layers = []
     retain_rate = 0.25
-    author = 'Yixuan'
+    author = 'XXX'
     seed = 1
     model_name = 'resnet18'
-    quantized_dir_name = '../adhoc_models/ref_models/resnet18/'
+    quantized_dir_name = '../models/resnet18/'
     # quantized_file_name = '../models/resnet50/batch512_b4_include0_scaler1.81_percentile1.0_retain_rate0.25_dsILSVRC2012'
 
     # default_transform is used for all pretrained models and Normalize is mandatory
