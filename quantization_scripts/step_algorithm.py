@@ -23,33 +23,6 @@ class StepAlgorithm:
         float
             The element within the alphabet that is cloest to the target.
         '''
-        # if regular alphabet
-
-        # Z 
-
-        # round(Z) then truncate
-
-        # if rounded result > max, set to max
-        # if round results < -max, set to -max
-
-        # x / c
-        # multiply by boolean expression
-
-        # (abs(x) <= max) * rounded(x) + (abs(x) > max) * sign(x) * max
-        # rescale at the end
-
-        # work for odd alphabets
-
-        # even alphabet use the floor
-
-        # q=de*floor(u/de)+de/2;              u is x
-        # q=q.*(abs(u)<=(K-1/2)*de) + sign(q).*(K-1/2).*de.*(abs(u)> (K-1/2)*de);
-
-        # [-3, -1, 1, 3]
-        # delta = 2
-
-        # 1.7
-
         return alphabet[np.argmin(np.abs(alphabet-target_val))]
 
 
@@ -222,11 +195,6 @@ class StepAlgorithm:
 
             for i in tqdm(range(groups)):
                 for j in range(W[i].shape[0]):
-                    # Linear way
-                    # idx, q = StepAlgorithm._quantize_neuron(w, idx, 
-                    #                     analog_layer_input, 
-                    #                     quantized_layer_input, m,
-                    #                     layer_alphabet)
                     idx, q = results[i][j].get()
                     Q[i, idx] = q
                 analog_output = analog_layer_input[:,i,:] @ W[i].T
@@ -234,19 +202,6 @@ class StepAlgorithm:
                 quantize_error += np.linalg.norm(analog_output - quantize_output, ord='fro') ** 2
                 analog_output_norms.append(np.linalg.norm(analog_output, ord='fro')**2)
 
-            # TODO: refactor this into another layer of multi-processing if needed
-            # for i in tqdm(range(groups)):
-            #     # note that m = B*L = analog_layer_input[:,i,:].shape[0]
-            #     Q[i] = StepAlgorithm._quantize_weight_mtx(
-            #         W[i], analog_layer_input[:,i,:], quantized_layer_input[:,i,:], m,
-            #         alphabet, percentile, rad,
-            #         surpress=True
-            #     )
-            #     analog_output = analog_layer_input[:,i,:] @ W[i].T
-            #     quantize_output = quantized_layer_input[:,i,:] @ Q[i].T
-            #     quantize_error += np.linalg.norm(analog_output - quantize_output, ord='fro') ** 2
-            #     analog_output_norms.append(np.linalg.norm(analog_output, ord='fro')**2)
-            
             relative_quantize_error = np.sqrt(quantize_error / np.array(analog_output_norms).sum())
             quantize_error = np.sqrt(quantize_error)
             
@@ -257,20 +212,3 @@ class StepAlgorithm:
 
         gc.collect()
         return Q, b_q, quantize_error, relative_quantize_error
-
-
-    def bias_correction(analog_input, quantize_input, W, Q, b, m):
-        '''
-        TODO: later doc
-        '''
-        print(m)
-        gap = analog_input @ W.T - quantize_input @ Q.T
-        print(gap.shape)
-        target = gap.reshape(-1)
-        A = np.vstack([np.identity(b.shape[0])] * m)
-        # ret = np.linalg.lstsq(A, target)
-        # A_inv = np.linalg.pinv(A)
-        # b_q = A_inv @ target
-        b_q = b + np.mean(gap, axis=0)
-        return b_q
-        

@@ -32,7 +32,7 @@ if __name__ == '__main__':
     include_0 = True
     ignore_layers = []
     retain_rate = 0.25
-    author = 'Jinjie'
+    author = 'XXX'
     seed = 0 
     retrain_bs = 256  # batch size used for retraining
 
