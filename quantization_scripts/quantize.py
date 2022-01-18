@@ -24,13 +24,13 @@ if __name__ == '__main__':
     scalar_list = [1.16]
     mlp_scalar_list = [1.6] 
     cnn_scalar_list = [1.6] 
-    batch_size_list = [1024]
+    batch_size_list = [64]
             # 1024, 512, 256, 128, 64, 32] # batch_size used for quantization
     mlp_percentile_list = [1.0]   # quantile of weight matrix W
     cnn_percentile_list = [1.0]   # quantile of weight matrix W
     num_workers = 8
     data_set = 'ILSVRC2012'   # 'ILSVRC2012', 'CIFAR10', 'MNIST' 
-    model_name = 'resnet18' # choose models 
+    model_name = 'alexnet' # choose models 
     include_0 = True
     ignore_layers = []
     retain_rate = 0.25
