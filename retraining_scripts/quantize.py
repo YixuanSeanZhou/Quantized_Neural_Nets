@@ -13,28 +13,29 @@ from quantize_neural_net import QuantizeNeuralNet
 from helper_tools import test_accuracy
 from data_loaders import data_loader
 
+
 log_file_name = '../logs/Quantization_Log.csv'
 
 
 if __name__ == '__main__':
 
     # hyperparameter section
-    bits = [3]
-    scalar_list = [1.1]
-    mlp_scalar_list = [1.1] 
-    cnn_scalar_list = [1.1] 
-    batch_size_list = [128] # batch_size used for quantization
+    bits = [3]              # the number of bits for quantization
+    scalar_list = [1.1]     #  the scalar C used to determine the radius of alphabets
+    mlp_scalar_list = [1.1]    # One can use different C for fully-connected layers and convolutional layers
+    cnn_scalar_list = [1.1]   
+    batch_size_list = [128]     # batch size m used for quantization
     mlp_percentile_list = [1.0]   # quantile of weight matrix W
     cnn_percentile_list = [1.0]   # quantile of weight matrix W
     num_workers = 8
     data_set = 'ILSVRC2012'   # 'ILSVRC2012', 'CIFAR10', 'MNIST' 
     model_name = 'alexnet' # choose models 
     include_0 = True
-    ignore_layers = []
-    retain_rate = 0.25
+    ignore_layers = []     
+    retain_rate = 0.25     # subsampling probability p for convolutional layers
     author = 'XXX'
     seed = 0 
-    retrain_bs = 256  # batch size used for retraining
+    retrain_bs = 256  # batch size used for retraining (if )
 
     # default_transform is used for all pretrained models and Normalize is mandatory
     # see https://pytorch.org/vision/stable/models.html
@@ -146,6 +147,7 @@ if __name__ == '__main__':
 
         print(f'\nTime used for evaluation: {end_time - start_time}\n')
 
+        # store the validation accuracy and parameter settings
         with open(log_file_name, 'a') as f:
             csv_writer = csv.writer(f)
             row = [
