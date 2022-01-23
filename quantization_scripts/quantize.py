@@ -35,7 +35,7 @@ if __name__ == '__main__':
     retain_rate = 0.25      # subsampling probability p for convolutional layers
     author = 'XXX'
     seed = 0 
-    skip_layers = True
+    skip_layers = True      # set True to unquantize the last layer 
     if skip_layers:
         log_file_name = '../logs/Quantization_Log_Skip.csv'
 
