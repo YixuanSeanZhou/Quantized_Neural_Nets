@@ -20,7 +20,7 @@ If you make use of this code or our quantization method in your work, please cit
 We assume a python version that is greater than `3.8.0` is installed in the user's 
 machine.
 
-In the root directory of this repo, we provide a `requirememt.txt` file for the
+In the root directory of this repo, we provide a `requirememts.txt` file for the
 ease of installation.
 
 To install the necessary dependency, one can first start a virtual environment
@@ -31,7 +31,7 @@ source .venv/bin/activate
 ```
 The above should activate a new python virtual environments.
 
-Then, one can make use of the `requirement.txt` by 
+Then, one can make use of the `requirements.txt` by 
 ```
 pip3 install -r requirement.txt
 ```
@@ -44,16 +44,15 @@ in particular, we use the ILSVRC-2012 version.
 
 To obtain the Imagenet dataset, one can submit a request through this [link](https://image-net.org/request).
 
-Once the dataset is obtained, place the `.tar` files for training set and validation set both under the root directory of this repo. 
+Once the dataset is obtained, place the `.tar` files for training set and validation set both under the `data/ILSVRC2012` directory of this repo. 
 
 Then use the following procedure to unzip Imagenet dataset:
 ```
-mkdir train && mv ILSVRC2012_img_train.tar train/ && cd train
 tar -xvf ILSVRC2012_img_train.tar && rm -f ILSVRC2012_img_train.tar
 find . -name "*.tar" | while read NAME ; do mkdir -p "${NAME%.tar}"; tar -xvf "${NAME}" -C "${NAME%.tar}"; rm -f "${NAME}"; done
 cd ..
 # Extract the validation data and move images to subfolders:
-mkdir val && mv ILSVRC2012_img_val.tar val/ && cd val && tar -xvf ILSVRC2012_img_val.tar
+tar -xvf ILSVRC2012_img_val.tar
 ``` 
 
 ## Running Experiment
