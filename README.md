@@ -1,5 +1,6 @@
-# Quantized_Neural_Nets
-TODO: Description
+# Post-training Quantization for Neural Networks with Provable Guarantees
+
+#### Authors: [Jinjie Zhang](https://scholar.google.com/citations?user=YCR4koUAAAAJ&hl=en) (jiz003@ucsd.edu), [Yixuan Zhou](https://github.com/YixuanSeanZhou) (yiz044@ucsd.edu) and [Rayan Saab](https://mathweb.ucsd.edu/~rsaab/) (rsaab@ucsd.edu)
 
 ## Install Dependencies
 We assume a python version that is greater than `3.8.0` is installed in the user's 
