@@ -2,6 +2,20 @@
 
 #### Authors: [Jinjie Zhang](https://scholar.google.com/citations?user=YCR4koUAAAAJ&hl=en) (jiz003@ucsd.edu), [Yixuan Zhou](https://github.com/YixuanSeanZhou) (yiz044@ucsd.edu) and [Rayan Saab](https://mathweb.ucsd.edu/~rsaab/) (rsaab@ucsd.edu)
 
+## Overview 
+This directory contains code necessary to run a post-training neural-network quantization method GPFQ, that
+is based on a greedy path-following mechanism. One can also use it to reproduce the experiment results in our paper ["Post-training Quantization for Neural Networks with Provable Guarantees"](). In this paper, we also prove theoretical guarantees for our method, that is, for quantizing a single-layer network, the relative square error essentially decays linearly in the number of weights – i.e., level of over-parametrization. 
+
+If you make use of this code or our quantization method in your work, please cite the following paper:
+
+     @inproceedings{,
+	     author = {Zhang, Jinjie and Zhou, Yixuan and Saab, Rayan},
+	     title = {Post-training Quantization for Neural Networks with Provable Guarantees},
+	     booktitle = {},
+	     year = {2022}
+	   }
+
+
 ## Install Dependencies
 We assume a python version that is greater than `3.8.0` is installed in the user's 
 machine.
