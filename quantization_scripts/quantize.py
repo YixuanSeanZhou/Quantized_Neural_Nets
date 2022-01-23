@@ -20,12 +20,11 @@ log_file_name = '../logs/Quantization_Log.csv'
 if __name__ == '__main__':
 
     # hyperparameter section
-    bits = [4]
-    scalar_list = [1.16]
-    mlp_scalar_list = [1.6] 
+    bits = [4]              # the number of bits for quantization
+    scalar_list = [1.16]    #  the scalar C used to determine the radius of alphabets
+    mlp_scalar_list = [1.6]  # One can use different C for fully-connected layers and convolutional layers
     cnn_scalar_list = [1.6] 
-    batch_size_list = [64]
-            # 1024, 512, 256, 128, 64, 32] # batch_size used for quantization
+    batch_size_list = [64]  # 1024, 512, 256, 128, 64, 32] # batch_size used for quantization
     mlp_percentile_list = [1.0]   # quantile of weight matrix W
     cnn_percentile_list = [1.0]   # quantile of weight matrix W
     num_workers = 8
@@ -33,7 +32,7 @@ if __name__ == '__main__':
     model_name = 'alexnet' # choose models 
     include_0 = True
     ignore_layers = []
-    retain_rate = 0.25
+    retain_rate = 0.25      # subsampling probability p for convolutional layers
     author = 'XXX'
     seed = 0 
     skip_layers = True
@@ -146,7 +145,8 @@ if __name__ == '__main__':
         end_time = datetime.now()
 
         print(f'\nTime used for evaluation: {end_time - start_time}\n')
-
+        
+        # store the validation accuracy and parameter settings
         with open(log_file_name, 'a') as f:
             csv_writer = csv.writer(f)
             row = [
