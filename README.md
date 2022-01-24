@@ -18,10 +18,7 @@ If you make use of this code or our quantization method in your work, please cit
 
 ## Install Dependencies
 We assume a python version that is greater than `3.8.0` is installed in the user's 
-machine.
-
-In the root directory of this repo, we provide a `requirements.txt` file for the
-ease of installation.
+machine. In the root directory of this repo, we provide a `requirements.txt` file for installing the python libraries that will be used in our code. 
 
 To install the necessary dependency, one can first start a virtual environment
 by doing the following: 
@@ -29,9 +26,9 @@ by doing the following:
 python3 -m venv .venv
 source .venv/bin/activate
 ```
-The above should activate a new python virtual environments.
+The code above should activate a new python virtual environments.
 
-Then, one can make use of the `requirements.txt` by 
+Then one can make use of the `requirements.txt` by 
 ```
 pip3 install -r requirement.txt
 ```
