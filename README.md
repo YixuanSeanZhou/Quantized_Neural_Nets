@@ -63,6 +63,6 @@ In this section, we will give a guidance on running our code contained in `quant
 2. The entry point of the project starts with `quantization_scripts/quantize.py`. 
 Once the file is opened, there is a section to set hyperparameters, for example, the `model_name` parameter, the number of bits/batch size used for quantization, the scalar of alphabets, the probability for subsampling in CNNs etc. Note that the `model_name` mentioned above should be the same as the model that you will quantize. After you selected a `model_name` and assuming you are still in the root directory of this repo, run `mkdir models/{model_name}`, where the `{model_name}` should be the python string that you provided for the `model_name` parameter in the `quantize.py` file. If the directory already exists, you can skip this step. 
 
-4. Then navigate to the `logs` directory and run `python3 init_logs.py`. This will prepare a log file which is used to store the results of the experiment.
+3. Then navigate to the `logs` directory and run `python3 init_logs.py`. This will prepare a log file which is used to store the results of the experiment.
 
-5. Finally, open the `quantization_scripts` directory and run `python3 quantize.py` to start the experiment.
+4. Finally, open the `quantization_scripts` directory and run `python3 quantize.py` to start the experiment.
