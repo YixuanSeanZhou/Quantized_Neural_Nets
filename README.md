@@ -16,7 +16,7 @@ If you make use of this code or our quantization method in your work, please cit
 	   }
 
 
-*Note:* The project mainly consider the ImageNet dataset, and due to the size of this dataset we strongly recommend one to run this experiment using a cloud computation center, e.g. AWS. When we run this experiment, we use the `m5.8xlarge` AWS EC2 instance with a disk space of `300GB`.
+*Note:* The code is designed to work primarily with the ImageNet dataset. Due to the size of this dataset, it is likely one may need heavier computational resources than a local machine. Nevertheless, the experiments can be run, for example, using a cloud computation center, e.g. AWS. When we run this experiment, we use the `m5.8xlarge` EC2 instance with a disk space of `300GB`.
 
 ## Installing Dependencies
 We assume a python version that is greater than `3.8.0` is installed in the user's 
