@@ -55,12 +55,13 @@ cd ..
 tar -xvf ILSVRC2012_img_val.tar
 ``` 
 
-## Running Experiment
+## Running Experiments
 
-The project is divided into three parts, `quantization_scripts`, `retraining_scripts` and `adhoc_quantization_scripts`. The main project uses only the `quantization_scripts`.  We detail the procedure in for running experiments using files provided in `quantization_scripts` in this section. The other two parts of the project are very similar to what we stated here.  
+The implementation of the modified GPFQ in our paper is contained in `quantization_scripts`. Additionally, `adhoc_quantization_scripts` and `retraining_scripts` provide extra experiments and both of them are variants of the framework in `quantization_scripts`. `adhoc_quantization_scripts` contains heuristic modifications used to further improve the performance of GPFQ, such as bias correction, mixed precision, and unquantizing the last layer. `retraining_scripts` shows a quantization-aware training strategy that is designed to retrain the neural network after each layer is quantized. 
 
-Before getting started, run in the root directory of the repo, run `mkdir models`
-to create a directory in which we will store the quantized model. 
+In this section, we will give a guidance on running our code contained in `quantization_scripts` and the implementation of other two counterparts `adhoc_quantization_scripts` and `retraining_scripts` are very similar to `quantization_scripts`.
+
+Before getting started, run in the root directory of the repo, run `mkdir models`to create a directory in which we will store the quantized model. 
 
 The entry point of the project starts with `quantization_scripts/quantize.py`. 
 Once the file is opened, there is a hyperparameter section for one to specify the 
