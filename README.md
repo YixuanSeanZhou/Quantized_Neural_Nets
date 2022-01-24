@@ -20,7 +20,7 @@ If you make use of this code or our quantization method in your work, please cit
 We assume a python version that is greater than `3.8.0` is installed in the user's 
 machine.
 
-In the root directory of this repo, we provide a `requirememts.txt` file for the
+In the root directory of this repo, we provide a `requirements.txt` file for the
 ease of installation.
 
 To install the necessary dependency, one can first start a virtual environment
@@ -61,15 +61,11 @@ The implementation of the modified GPFQ in our paper is contained in `quantizati
 
 In this section, we will give a guidance on running our code contained in `quantization_scripts` and the implementation of other two counterparts `adhoc_quantization_scripts` and `retraining_scripts` are very similar to `quantization_scripts`.
 
-Before getting started, run in the root directory of the repo, run `mkdir models`to create a directory in which we will store the quantized model. 
+1. Before getting started, run in the root directory of the repo and run `mkdir models`to create a directory in which we will store the quantized model. 
 
-The entry point of the project starts with `quantization_scripts/quantize.py`. 
-Once the file is opened, there is a hyperparameter section for one to specify the 
-batch size that is used for quantization, the scalar of each type of the layers,
-the percentile for each type of layers, and etc. One can specify the hyperparameters that will be used in this quantization experiment. 
+2. The entry point of the project starts with `quantization_scripts/quantize.py`. 
+Once the file is opened, there is a section to set hyperparameters, for example, the `model_name` parameter, the number of bits/batch size used for quantization, the scalar of alphabets, the probability for subsampling in CNNs etc. Note that the `model_name` mentioned above should be the same as the model that you will quantize. After you selected a `model_name` and assuming you are still in the root directory of this repo, run `mkdir models/{model_name}`, where the `{model_name}` should be the python string that you provided for the `model_name` parameter in the `quantize.py` file. If the directory already exists, you can skip this step. 
 
-One thing to note is the  `model_name` parameter. This `model_name` should be the same as the model that you try to quantize. After you selected a `model_name`, assuming you are still in the root directory of this repo, run `mkdir models/{model_name}`, where the `{model_name}` should be the string value that you provided for the `model_name` parameter in the `quantize.py` file. If the directory already exists, you can skip this step. 
+4. Then navigate to the `logs` directory and run `python3 init_logs.py`. This will prepare a log file which is used to store the results of the experiment.
 
-Then navigate to the `logs` directory and run `python3 init_logs.py`. This will prepare a log file which is used to store the results of the experiment.
-
-Lastly, navigate into the `quantization_scripts` directory, run `python3 quantize.py` to start the experiment.
+5. Lastly, navigate into the `quantization_scripts` directory, run `python3 quantize.py` to start the experiment.
