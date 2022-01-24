@@ -16,7 +16,7 @@ If you make use of this code or our quantization method in your work, please cit
 	   }
 
 
-## Install Dependencies
+## Installing Dependencies
 We assume a python version that is greater than `3.8.0` is installed in the user's 
 machine. In the root directory of this repo, we provide a `requirements.txt` file for installing the python libraries that will be used in our code. 
 
@@ -34,7 +34,7 @@ pip3 install -r requirement.txt
 ```
 This should install all the required dependencies of this project. 
 
-### Obtaining Dataset.
+## Obtaining ImageNet Dataset
 
 In this project, we make use of the Imagenet dataset, 
 in particular, we use the ILSVRC-2012 version. 
