@@ -68,4 +68,4 @@ Once the file is opened, there is a section to set hyperparameters, for example,
 
 4. Then navigate to the `logs` directory and run `python3 init_logs.py`. This will prepare a log file which is used to store the results of the experiment.
 
-5. Lastly, navigate into the `quantization_scripts` directory, run `python3 quantize.py` to start the experiment.
+5. Finally, open the `quantization_scripts` directory and run `python3 quantize.py` to start the experiment.
