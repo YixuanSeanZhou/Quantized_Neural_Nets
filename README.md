@@ -1,6 +1,6 @@
 # Post-training Quantization for Neural Networks with Provable Guarantees
 
-#### Authors: [Jinjie Zhang](https://scholar.google.com/citations?user=YCR4koUAAAAJ&hl=en) (jiz003@ucsd.edu), [Yixuan Zhou](https://yixuanseanzhou.github.io/) (yiz044@ucsd.edu) and [Rayan Saab](https://mathweb.ucsd.edu/~rsaab/) (rsaab@ucsd.edu)
+#### Authors: [Jinjie Zhang](https://jayzhang0727.github.io/) (jiz003@ucsd.edu), [Yixuan Zhou](https://yixuanseanzhou.github.io/) (yiz044@ucsd.edu) and [Rayan Saab](https://mathweb.ucsd.edu/~rsaab/) (rsaab@ucsd.edu)
 
 ## Overview 
 This directory contains code necessary to run a post-training neural-network quantization method GPFQ, that
