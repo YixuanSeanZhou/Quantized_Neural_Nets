@@ -8,7 +8,7 @@ is based on a greedy path-following mechanism. One can also use it to reproduce 
 
 If you make use of this code or our quantization method in your work, please cite the following paper:
 
-     @inproceedings{zhang2022posttraining,
+     @article{zhang2022posttraining,
 	     author = {Zhang, Jinjie and Zhou, Yixuan and Saab, Rayan},
 	     title = {Post-training Quantization for Neural Networks with Provable Guarantees},
 	     booktitle = {arXiv preprint arXiv:2201.11113},
