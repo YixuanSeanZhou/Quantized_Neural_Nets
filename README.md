@@ -8,13 +8,12 @@ is based on a greedy path-following mechanism. One can also use it to reproduce 
 
 If you make use of this code or our quantization method in your work, please cite the following paper:
 
-     @article{zhang2022posttraining,
-	     author = {Zhang, Jinjie and Zhou, Yixuan and Saab, Rayan},
-	     title = {Post-training Quantization for Neural Networks with Provable Guarantees},
-	     booktitle = {arXiv preprint arXiv:2201.11113},
-	     year = {2022}
-	   }
-
+	 @article{zhang2022post,
+		title={Post-training Quantization for Neural Networks with Provable Guarantees},
+		author={Zhang, Jinjie and Zhou, Yixuan and Saab, Rayan},
+		journal={arXiv preprint arXiv:2201.11113},
+		year={2022}
+		}
 
 *Note:* The code is designed to work primarily with the ImageNet dataset. Due to the size of this dataset, it is likely one may need heavier computational resources than a local machine. Nevertheless, the experiments can be run, for example, using a cloud computation center, e.g. AWS. When we run this experiment, we use the `m5.8xlarge` EC2 instance with a disk space of `300GB`.
 
