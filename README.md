@@ -46,11 +46,14 @@ Once the dataset is obtained, place the `.tar` files for training set and valida
 
 Then use the following procedure to unzip Imagenet dataset:
 ```
+# Extract the training data and move images to subfolders:
+mkdir ILSVRC2012_img_train
+mv ILSVRC2012_img_train.tar ILSVRC2012_img_train
 tar -xvf ILSVRC2012_img_train.tar && rm -f ILSVRC2012_img_train.tar
 find . -name "*.tar" | while read NAME ; do mkdir -p "${NAME%.tar}"; tar -xvf "${NAME}" -C "${NAME%.tar}"; rm -f "${NAME}"; done
 cd ..
-# Extract the validation data and move images to subfolders:
-tar -xvf ILSVRC2012_img_val.tar
+# Extract the validation data:
+tar -xvf ILSVRC2012_img_val.tar && rm -f ILSVRC2012_img_val.tar
 ``` 
 
 ## Running Experiments
