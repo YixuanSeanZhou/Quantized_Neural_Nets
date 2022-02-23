@@ -6,6 +6,8 @@
 This directory contains code necessary to run a post-training neural-network quantization method GPFQ, that
 is based on a greedy path-following mechanism. One can also use it to reproduce the experiment results in our paper ["Post-training Quantization for Neural Networks with Provable Guarantees"](https://arxiv.org/abs/2201.11113). In this paper, we also prove theoretical guarantees for the proposed method, that is, for quantizing a single-layer network, the relative square error essentially decays linearly in the number of weights – i.e., level of over-parametrization. 
 
+![Quantization Scheme](./imgs/algorithm.png)
+
 If you make use of this code or our quantization method in your work, please cite the following paper:
 
 	 @article{zhang2022post,
