@@ -21,10 +21,9 @@ if __name__ == '__main__':
 
     # hyperparameter section
     bits = [4]              # the number of bits for quantization
-    scalar_list = [1.16]    #  the scalar C used to determine the radius of alphabets
-    mlp_scalar_list = [1.6]  # One can use different C for fully-connected layers and convolutional layers
-    cnn_scalar_list = [1.6] 
-    batch_size_list = [64]  # 1024, 512, 256, 128, 64, 32] # batch_size used for quantization
+    scalar_list = [1.16]    #  the scalar C used to determine the radius of alphabets, we use 
+    # C = 0.975, 1.16, 1.81 for VGG-16, ResNet-18, and ResNet-50 respectively. More C values can be found in our paper. 
+    batch_size_list = [256]  # 1024, 512, 256, 128, 64, 32] # batch_size used for quantization
     mlp_percentile_list = [1.0]   # quantile of weight matrix W
     cnn_percentile_list = [1.0]   # quantile of weight matrix W
     num_workers = 8
