@@ -48,14 +48,12 @@ class StepAlgorithm:
         float
             The quantized value.
         '''
-
-        if np.linalg.norm(X_quantize, 2) < 10 ** (-16):
-            return StepAlgorithm._nearest_alphabet(0, alphabet)
         
-        if abs(np.dot(X_quantize, u)) < 10 ** (-10):
-            return StepAlgorithm._nearest_alphabet(w, alphabet)
-
-        target_val = np.dot(X_quantize, u + w * X_analog) / (np.linalg.norm(X_quantize, 2) ** 2)
+        if np.linalg.norm(X_quantize, 2) > 0:
+            target_val = np.dot(X_quantize, u + w * X_analog) / (np.linalg.norm(X_quantize, 2) ** 2)
+        else:
+            target_val = 0
+        
         return StepAlgorithm._nearest_alphabet(target_val, alphabet)
 
     
