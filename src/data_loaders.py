@@ -9,7 +9,7 @@ import os
 import glob
 import re
 import pickle
-from helper_tools import parse_imagenet_val_labels
+from utils import parse_imagenet_val_labels
 
 def seed_worker(worker_id):
     worker_seed = torch.initial_seed() % 2**32
@@ -43,15 +43,24 @@ class Imagenet(Dataset):
         return x, y
 
 
-def data_loader(ds_name, batch_size, transform, num_workers): 
+def data_loader(ds_name, batch_size, num_workers): 
     """
     Prepare data loaders
     """
     if ds_name == 'ILSVRC2012':
-        data_dir = '../data/ILSVRC2012'
+        data_dir = '../data/ILSVRC2012'  # customize the data path before run the code 
 
         if not os.path.isdir(data_dir):
             raise Exception('Please download Imagenet2012 dataset!')
+
+        # see https://pytorch.org/vision/stable/models.html for setting transform
+        transform = transforms.Compose([
+                            transforms.Resize(256), 
+                            transforms.CenterCrop(224),  
+                            transforms.ToTensor(),
+                            transforms.Normalize(mean=[0.485, 0.456, 0.406],
+                                            std=[0.229, 0.224, 0.225])
+                            ])
         
         train_ds = torchvision.datasets.ImageFolder(os.path.join(data_dir, 'ILSVRC2012_img_train'),
                                                     transform=transform)
@@ -61,23 +70,41 @@ def data_loader(ds_name, batch_size, transform, num_workers):
                 pickle.dump(train_ds.class_to_idx, f)         
 
         test_ds = Imagenet(data_dir, transform) 
+        # test_ds = torchvision.datasets.ImageFolder(os.path.join(data_dir, 'ILSVRC2012_img_val'),
+        #                                             transform=transform)
         train_dl = DataLoader(train_ds, batch_size, shuffle=True, num_workers=num_workers,
                                 worker_init_fn=seed_worker, generator=g)
-        test_dl = DataLoader(test_ds, batch_size, shuffle=False,
+        test_dl = DataLoader(test_ds, min(batch_size, 1024), shuffle=False,
                                 num_workers=num_workers) 
 
+    elif ds_name == 'CIFAR10':
+        data_dir = '../data'
+
+        transform_train = transforms.Compose([
+                transforms.RandomCrop(32, padding=4),
+                transforms.RandomHorizontalFlip(),
+                transforms.ToTensor(),
+                transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
+        ])
+
+        transform_test = transforms.Compose([
+            transforms.ToTensor(),
+            transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
+        ])
+
+        train_ds = torchvision.datasets.CIFAR10(root=data_dir, train=True, download=True, 
+            transform=transform_train)
+        
+        test_ds = torchvision.datasets.CIFAR10(root=data_dir, train=False, download=True, 
+            transform=transform_test)
+        
+        train_dl = DataLoader(train_ds, shuffle=True, batch_size=batch_size,
+                              num_workers=num_workers, worker_init_fn=seed_worker, generator=g)
+        
+        test_dl = DataLoader(test_ds, shuffle=False, batch_size=min(batch_size, 1024),
+                             num_workers=num_workers)
+
     else:
-        train_ds = getattr(torchvision.datasets, ds_name)("../data",
-                                                        train=True,
-                                                        transform=transform,
-                                                        download=True)
-        test_ds = getattr(torchvision.datasets, ds_name)("../data",
-                                                    train=False,
-                                                    transform=transform,
-                                                    download=True)
-                                    
-        train_dl = DataLoader(train_ds, batch_size, shuffle=True, num_workers=num_workers,
-                                worker_init_fn=seed_worker, generator=g)
-        test_dl = DataLoader(test_ds, batch_size, shuffle=False,
-                                num_workers=num_workers)             
+        raise Exception('Unkown dataset!')
+
     return train_dl, test_dl 

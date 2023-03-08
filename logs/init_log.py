@@ -7,7 +7,8 @@ log_file_name = 'Quantization_Log.csv'
 fields = ['Model Name', 'Dataset', 'Quantization Batch Size', 'Original Top1 Accuracy',
           'Quantized Top1 Accuracy', 'Original Top5 Accuracy', 'Quantized Top5 Accuracy', 
           'Bits', 'MLP_Alphabet_Scalar', 'CNN_Alphabet_Scalar', 'MLP_Percentile', 'CNN_Percentile',
-          'Include 0', 'Retain_rate', 'Seed', 'Author']
+          'Stochastic Quantization', 'Regularizer', 'Lambda', 'Original Sparsity',
+          'Quantized Sparsity', 'Retain_rate', 'Fusion', 'Seed']
 
 if __name__ == '__main__':
     if os.path.isfile(log_file_name):
