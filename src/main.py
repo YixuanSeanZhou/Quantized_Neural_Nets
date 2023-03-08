@@ -12,7 +12,7 @@ from data_loaders import data_loader
 LOG_FILE_NAME = '../logs/Quantization_Log.csv'
 
 # hyperparameter section
-parser = argparse.ArgumentParser(description='Stochastic Quantization')
+parser = argparse.ArgumentParser(description='Quantization algorithms in the paper')
 
 parser.add_argument('--bits', '-b', default=[4], type=int, nargs='+',
                     help='number of bits for quantization')
