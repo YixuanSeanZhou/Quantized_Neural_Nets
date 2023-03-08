@@ -17,7 +17,7 @@ If you make use of this code or our quantization method in your work, please cit
 		year={2022}
 		}
 
-*Note:* The code is designed to work primarily with the ImageNet dataset. Due to the size of this dataset, it is likely one may need heavier computational resources than a local machine. Nevertheless, the experiments can be run, for example, using a cloud computation center, e.g. AWS. When we run this experiment, we use the `m5.8xlarge` EC2 instance with a disk space of `500GB`.
+*Note:* The code is designed to work primarily with the ImageNet dataset. Due to the size of this dataset, it is likely one may need heavier computational resources than a local machine. Nevertheless, the experiments can be run, for example, using a cloud computation center, e.g. AWS. When we run this experiment, we use the `p3.8xlarge` EC2 instance with a disk space of `300GB`. GPUs can significantly accelerate quantization and inference (20 times faster than CPUs).
 
 ## Installing Dependencies
 We assume a python version that is greater than `3.8.0` is installed in the user's 
@@ -33,7 +33,7 @@ The code above should activate a new python virtual environments.
 
 Then one can make use of the `requirements.txt` by 
 ```
-pip3 install -r requirement.txt
+pip3 install -r requirements.txt
 ```
 This should install all the required dependencies of this project. 
 
@@ -64,18 +64,17 @@ tar -xvf ILSVRC2012_img_val.tar && rm -f ILSVRC2012_img_val.tar
 
 ## Running Experiments
 
-The implementation of the modified GPFQ in our paper is contained in `quantization_scripts`. Additionally, `adhoc_quantization_scripts` and `retraining_scripts` provide extra experiments and both of them are variants of the framework in `quantization_scripts`. `adhoc_quantization_scripts` contains heuristic modifications used to further improve the performance of GPFQ, such as bias correction, mixed precision, and unquantizing the last layer. `retraining_scripts` shows a quantization-aware training strategy that is designed to retrain the neural network after each layer is quantized. 
+The implementation of GPFQ and its sparse mode in our paper is contained in `src/main.py`. 
 
-In this section, we will give a guidance on running our code contained in `quantization_scripts` and the implementation of other two counterparts `adhoc_quantization_scripts` and `retraining_scripts` are very similar to `quantization_scripts`.
+1. Before running the `main.py` file, navigate to the `logs` directory and run `python init_log.py`. This will prepare a log file `Quantization_Log.csv` which is used to store the results of the experiment. 
 
-1. Before getting started, run in the root directory of the repo and run `mkdir models`to create a directory in which we will store the quantized model. 
+2. Open the `src` directory and run `python main.py -h` to check hyperparameters, including the number of bits/batch size used for quantization, the scalar of alphabets, the probability for subsampling in CNNs, and regularizations used for sparse quantization etc.
 
-2. The entry point of the project starts with `quantization_scripts/quantize.py`. 
-Once the file is opened, there is a section to set hyperparameters, for example, the `model_name` parameter, the number of bits/batch size used for quantization, the scalar of alphabets, the probability for subsampling in CNNs etc. Note that the `model_name` mentioned above should be the same as the model that you will quantize. After you selected a `model_name` and assuming you are still in the root directory of this repo, run `mkdir models/{model_name}`, where the `{model_name}` should be the python string that you provided for the `model_name` parameter in the `quantize.py` file. If the directory already exists, you can skip this step. 
-
-3. Then navigate to the `logs` directory and run `python3 init_logs.py`. This will prepare a log file which is used to store the results of the experiment.
-
-4. Finally, open the `quantization_scripts` directory and run `python3 quantize.py` to start the experiment.
+3. To start the experiment, we provide an example: If we want to quantize the ResNet-18 using ImageNet data with bit = 4, batch_size = 512, scalar = 1.16, then we can try this:
+```
+python main.py -model resnet18 -b 4 -bs 256 -s 1.16
+```
+There are other options we can select, see `main.py`.
 
 ## Examples of Quantized Models 
 
