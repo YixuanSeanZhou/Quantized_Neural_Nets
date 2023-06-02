@@ -10,12 +10,16 @@ is based on a greedy path-following mechanism. One can also use it to reproduce 
 
 If you make use of this code or our quantization method in your work, please cite the following paper:
 
-	 @article{zhang2022post,
-		title={Post-training Quantization for Neural Networks with Provable Guarantees},
-		author={Zhang, Jinjie and Zhou, Yixuan and Saab, Rayan},
-		journal={arXiv preprint arXiv:2201.11113},
-		year={2022}
-		}
+@article{zhang2023post,
+  title={Post-training quantization for neural networks with provable guarantees},
+  author={Zhang, Jinjie and Zhou, Yixuan and Saab, Rayan},
+  journal={SIAM Journal on Mathematics of Data Science},
+  volume={5},
+  number={2},
+  pages={373--399},
+  year={2023},
+  publisher={SIAM}
+}
 
 *Note:* The code is designed to work primarily with the ImageNet dataset. Due to the size of this dataset, it is likely one may need heavier computational resources than a local machine. Nevertheless, the experiments can be run, for example, using a cloud computation center, e.g. AWS. When we run this experiment, we use the `p3.8xlarge` EC2 instance with a disk space of `300GB`. GPUs can significantly accelerate quantization and inference (20 times faster than CPUs).
 
